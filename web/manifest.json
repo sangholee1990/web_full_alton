@@ -1,12 +1,12 @@
 {
-    "name": "web_full_alton",
-    "short_name": "web_full_alton",
+    "name": "바이크메트릭스AI",
+    "short_name": "바이크메트릭스AI",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "web-full-alton",
-    "orientation": "portrait-primary",
+    "background_color": "#FFFF8200",
+    "theme_color": "#FFFF8200",
+    "description": "바이크메트릭스AI",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

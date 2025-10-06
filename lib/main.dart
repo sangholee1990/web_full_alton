@@ -1,11 +1,25 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'bike_finder_page.dart';
+import 'widgets/app_header.dart';
+import 'widgets/app_footer.dart';
 
 // main 함수: 앱의 시작점
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  // runApp(const MyApp());
+
+  runApp(
+    const ProviderScope(child: MyApp()),
+  );
 }
+
+final isScrolledProvider = StateProvider<bool>((ref) {
+  return false;
+});
 
 // MyApp 클래스: 앱의 루트 위젯, 라우팅 정의
 class MyApp extends StatelessWidget {
@@ -17,7 +31,7 @@ class MyApp extends StatelessWidget {
       title: 'Bike Metrics',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFFFF8200), // 메인 오렌지 색상 (Figma 기준)
+        primaryColor: const Color(0xFFFF7900), // 메인 오렌지 색상 (Figma 기준)
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Pretendard',
         textTheme: const TextTheme(
@@ -35,322 +49,40 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// --- 공통 위젯 ---
 
-// 상단 앱 바 위젯
-class AppHeader extends StatelessWidget implements PreferredSizeWidget {
-  final bool isDesktop;
-  const AppHeader({super.key, required this.isDesktop});
-
-  Widget _separator() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 8.0),
-      child: Text('|', style: TextStyle(fontSize: 12, color: Colors.black)),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      flexibleSpace: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 1280),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          // ### 1. Row의 정렬 방식을 기본(왼쪽 정렬)으로 변경 ###
-          child: Row(
-            children: [
-              InkWell(
-                onTap: () => Navigator.pushNamed(context, '/'),
-                child: Image.asset(
-                  'images/LOGO4.png',
-                  height: 24,
-                ),
-              ),
-              if (isDesktop)
-                Expanded( // Expanded를 추가하여 Row가 남은 공간을 모두 차지하도록 함
-                  child: Row(
-                    children: [
-                      // ### 2. 로고와 메뉴 사이에 간격 추가 ###
-                      const SizedBox(width: 50),
-                      _navButton(context, 'HOME', '/', isActive: ModalRoute.of(context)?.settings.name == '/'),
-                      _navButton(context, 'AI 맞춤 자전거 찾기', '/find', isActive: ModalRoute.of(context)?.settings.name == '/find'),
-                      _navButton(context, 'AI 시세 조회하기', '/'),
-
-                      // ### 3. Spacer 위젯을 추가하여 오른쪽 메뉴들을 맨 끝으로 밀어냄 ###
-                      const Spacer(),
-
-                      // 오른쪽 사용자 메뉴
-                      _userMenuButton('로그인'),
-                      _separator(),
-                      _userMenuButton('회원가입'),
-                      _separator(),
-                      _userMenuButton('알림'),
-                      const SizedBox(width: 20),
-                      const Icon(Icons.language, color: Colors.black, size: 20),
-                      const SizedBox(width: 5),
-                      const Text('KOR', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13)),
-                    ],
-                  ),
-                ),
-              if (!isDesktop)
-              // 모바일에서는 Spacer가 하나만 필요
-                const Spacer(),
-              if (!isDesktop)
-                IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.black),
-                  onPressed: () { /* TODO: Drawer 구현 */ },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ### 3. 네비게이션 버튼 텍스트 색상을 흰색으로 변경 ###
-  Widget _navButton(BuildContext context, String text, String routeName, {bool isActive = false}) {
-    return TextButton(
-      onPressed: () => Navigator.pushNamed(context, routeName),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: isActive ? const Color(0xFFFF8200) : Colors.black,
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  // ### 4. 유저 메뉴 버튼 텍스트 색상을 흰색으로 변경 ###
-  Widget _userMenuButton(String text) {
-    return TextButton(
-      onPressed: () {},
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        minimumSize: Size.zero,
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w500),
-      ),
-    );
-  }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(60.0);
-}
-
-// 새로운 푸터 위젯
-class AppFooter extends StatelessWidget {
-  final bool isDesktop;
-  const AppFooter({super.key, required this.isDesktop});
-
-  Widget _separator() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 8.0),
-      child: Text('|', style: TextStyle(fontSize: 12, color: Colors.white)),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // 1. 상단 주황색 바
-        Container(
-          color: const Color(0xFFFF8200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 1280),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 5,
-                    children: [
-                      _footerLinkButton('개인정보처리방침'),
-                      _separator(),
-                      _footerLinkButton('법적고지'),
-                      _separator(),
-                      _footerLinkButton('회사소개'),
-                    ],
-                  ),
-                  _footerLinkButton('FAMILY SITE +'),
-                ],
-              ),
-            ),
-          ),
-        ),
-        // 2. 중간 정보 섹션
-        Container(
-          color: Colors.white,
-          // padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 1280),
-              child: isDesktop
-                  ? const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 3, child: _FooterInfo()), // 회사 정보
-                  Expanded(flex: 1, child: _FooterQuickLinks()), // 빠른 링크
-                ],
-              )
-                  : const Column( // 모바일 레이아웃
-                children: [
-                  _FooterInfo(),
-                  SizedBox(height: 40),
-                  _FooterQuickLinks(),
-                ],
-              ),
-            ),
-          ),
-        ),
-        // 3. 하단 저작권 섹션
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-          child: Center(
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 1280),
-              decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1))),
-              padding: const EdgeInsets.only(top: 30),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Image.asset( // INNOX 로고 이미지로 교체
-                    'images/Group2468.png',
-                    height: 20,
-                  ),
-                  const Text(
-                    'Copyright © 2025 BikeMetrics. All Rights Reserved.',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _footerLinkButton(String text) {
-    return TextButton(
-      onPressed: () {},
-      style: TextButton.styleFrom(
-        foregroundColor: Colors.white,
-        padding: EdgeInsets.zero,
-        minimumSize: Size.zero,
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-      ),
-    );
-  }
-}
-
-class _FooterInfo extends StatelessWidget {
-  const _FooterInfo();
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Image.asset( // BIKE METRICS 로고
-              'images/LOGO4.png',
-              height: 24,
-            ),
-            const SizedBox(width: 20),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('본사 : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('경기도 양주시 칠봉산로120번길 82(봉양동) | 경기도 양주시 봉양동 33-4', style: TextStyle(color: Colors.black, fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    const Text('TEL : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('(031) 727 - 9100  ', style: TextStyle(color: Colors.black, fontSize: 13)),
-                    const Text('A/S : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('(031) 859 - 0100  ', style: TextStyle(color: Colors.black, fontSize: 13)),
-                    const Text('FAX : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('(031) 727 - 9291', style: TextStyle(color: Colors.black, fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    const Text('사업자 번호 : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('107-87-33730', style: TextStyle(color: Colors.black, fontSize: 13)),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-        // const SizedBox(height: 20),
-      ],
-    );
-  }
-}
-
-class _FooterQuickLinks extends StatelessWidget {
-  const _FooterQuickLinks();
-
-  Widget _quickLink(String text) {
-    return TextButton(
-      onPressed: () {},
-      style: TextButton.styleFrom(
-        padding: EdgeInsets.zero,
-        minimumSize: Size.zero,
-        alignment: Alignment.centerLeft,
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        _quickLink('HOME'),
-        const SizedBox(height: 8),
-        _quickLink('AI 맞춤 자전거 찾기'),
-        const SizedBox(height: 8),
-        _quickLink('AI 시세 조회하기'),
-      ],
-    );
-  }
-}
 
 // --- 페이지 1: 홈페이지 ---
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
+
+  @override
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    final bool shouldBeScrolled = _scrollController.offset > 10;
+    final bool isCurrentlyScrolled = ref.read(isScrolledProvider);
+
+    if (shouldBeScrolled != isCurrentlyScrolled) {
+      ref.read(isScrolledProvider.notifier).state = shouldBeScrolled;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -358,19 +90,21 @@ class HomePage extends StatelessWidget {
     final isDesktop = screenWidth > 900;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppHeader(isDesktop: isDesktop),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeroSection(context),
-            _buildBrandSection(context),
-            _buildCoreFunctionsSection(context, isDesktop),
-            _buildCollaborationSection(),
-            _buildApplicationSection(context, isDesktop),
-            AppFooter(isDesktop: isDesktop),
-          ],
+        body: SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
+              children: [
+                _buildHeroSection(context),
+                _buildBrandSection(context),
+                _buildCoreFunctionsSection(context, isDesktop),
+                _buildCollaborationSection(),
+                _buildApplicationSection(context, isDesktop),
+                AppFooter(isDesktop: isDesktop),
+              ],
+            ),
         ),
-      ),
     );
   }
 
@@ -433,11 +167,11 @@ class HomePage extends StatelessWidget {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         // primary 값에 따라 배경색과 글자색 변경
-        backgroundColor: primary ? Colors.white : const Color(0xFFFF8200),
-        foregroundColor: primary ? const Color(0xFFFF8200) : Colors.white,
+        backgroundColor: primary ? Colors.white : const Color(0xFFFF7900),
+        foregroundColor: primary ? const Color(0xFFFF7900) : Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // 각진 모서리
-        elevation: 0, // 그림자 제거
+        elevation: 0,
       ),
       onPressed: () => Navigator.pushNamed(context, routeName),
       child: Text(text, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
@@ -741,7 +475,7 @@ class HomePage extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                              color: const Color(0xFFFF8200),
+                              color: const Color(0xFFFF7900),
                               borderRadius: BorderRadius.circular(7)
                           ),
                           child: Icon(
@@ -771,171 +505,6 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// --- 페이지 2: AI 맞춤 자전거 찾기 ---
-// (이전 코드와 동일, 생략)
-class BikeFinderPage extends StatefulWidget {
-  const BikeFinderPage({super.key});
-
-  @override
-  State<BikeFinderPage> createState() => _BikeFinderPageState();
-}
-
-class _BikeFinderPageState extends State<BikeFinderPage> {
-  int _currentStep = 0;
-
-  void _nextStep() {
-    if (_currentStep < 3) {
-      setState(() {
-        _currentStep++;
-      });
-    }
-  }
-
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() {
-        _currentStep--;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 900;
-
-    // 현재 단계에 맞는 위젯을 리스트로 관리
-    final List<Widget> stepContents = [
-      _buildStep1Budget(),
-      _buildStep2BodyInfo(),
-      _buildStep3Results(),
-      _buildStep4Report(),
-    ];
-
-    return Scaffold(
-      appBar: AppHeader(isDesktop: isDesktop),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildPageHeader(),
-            Container(
-              constraints: const BoxConstraints(maxWidth: 900),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  const Text("AI 맞춤 자전거 찾기", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 40),
-                  _buildStepper(),
-                  const SizedBox(height: 40),
-                  // 현재 단계에 맞는 콘텐츠 표시
-                  stepContents[_currentStep],
-                  const SizedBox(height: 40),
-                  _buildNavigationButtons(),
-                ],
-              ),
-            ),
-            AppFooter(isDesktop: isDesktop),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 페이지 상단 Hero 이미지
-  Widget _buildPageHeader() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Image.network(
-        //   'https://placehold.co/1920x300/666666/FFFFFF?text=Finder+Header', // TODO: 실제 이미지 URL로 교체
-        //   height: 300,
-        //   width: double.infinity,
-        //   fit: BoxFit.cover,
-        // ),
-        Container(height: 300, color: Colors.black.withOpacity(0.5)),
-        const Column(
-          children: [
-            Text('나만을 위한 최적의 라이딩 파트너', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
-            SizedBox(height: 10),
-            Text(
-              'AI 맞춤 자전거 찾기는 복잡한 자전거 선택 과정을\n획기적으로 간소화하고, 사용자의 라이프 스타일에 가장 완벽하게\n부합하는 자전거를 추천해주는 혁신적인 서비스입니다.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.white70),
-            ),
-          ],
-        )
-      ],
-    );
-  }
-
-  // 단계 표시기 (Stepper)
-  Widget _buildStepper() {
-    final List<String> steps = ["용도 및 예산", "신체 정보", "추천 결과", "AI 비교 리포트"];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: List.generate(steps.length, (index) {
-        final bool isActive = index == _currentStep;
-        return Column(
-          children: [
-            Text(
-              "${index + 1}. ${steps[index]}",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                color: isActive ? const Color(0xFFFF8200) : Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 2,
-              width: 150,
-              color: isActive ? const Color(0xFFFF8200) : Colors.grey[300],
-            )
-          ],
-        );
-      }),
-    );
-  }
-
-  // --- 각 단계별 콘텐츠 위젯 ---
-  Widget _buildStep1Budget() {
-    return const Center(child: Text("1단계: 용도 및 예산 설정 (구현 예정)", style: TextStyle(fontSize: 20)));
-  }
-
-  Widget _buildStep2BodyInfo() {
-    return const Center(child: Text("2단계: 신체 정보 입력 (구현 예정)", style: TextStyle(fontSize: 20)));
-  }
-
-  Widget _buildStep3Results() {
-    return const Center(child: Text("3단계: 추천 결과 보기 (구현 예정)", style: TextStyle(fontSize: 20)));
-  }
-
-  Widget _buildStep4Report() {
-    return const Center(child: Text("4단계: AI 비교 리포트 (구현 예정)", style: TextStyle(fontSize: 20)));
-  }
-
-  // 이전/다음 네비게이션 버튼
-  Widget _buildNavigationButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (_currentStep > 0)
-          ElevatedButton(
-            onPressed: _previousStep,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey, padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15)),
-            child: const Text('이전'),
-          ),
-        const SizedBox(width: 20),
-        ElevatedButton(
-          onPressed: _nextStep,
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF8200), padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15)),
-          child: Text(_currentStep == 3 ? '완료' : '다음'),
-        ),
-      ],
     );
   }
 }
@@ -971,9 +540,9 @@ class _ImageSliderState extends State<ImageSlider> {
               _imagePaths[index],
               height: 730,
               width: double.infinity, // 너비를 최대로 설정
-              // width: 1280,
               fit: BoxFit.cover,
-              color: Colors.black.withOpacity(0.3),
+              // color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.2),
               colorBlendMode: BlendMode.darken,
             );
           },
