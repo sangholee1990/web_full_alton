@@ -149,26 +149,35 @@ class AppFooter extends StatelessWidget {
   final bool isDesktop;
   const AppFooter({super.key, required this.isDesktop});
 
+  Widget _separator() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 8.0),
+      child: Text('|', style: TextStyle(fontSize: 12, color: Colors.white)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // 상단 주황색 바
+        // 1. 상단 주황색 바
         Container(
           color: const Color(0xFFFF8200),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Center(
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 1200),
+              constraints: const BoxConstraints(maxWidth: 1280),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Wrap( // 모바일 화면에서 줄바꿈을 위해 Wrap 사용
+                  Wrap(
                     spacing: 10,
                     runSpacing: 5,
                     children: [
                       _footerLinkButton('개인정보처리방침'),
+                      _separator(),
                       _footerLinkButton('법적고지'),
+                      _separator(),
                       _footerLinkButton('회사소개'),
                     ],
                   ),
@@ -178,28 +187,54 @@ class AppFooter extends StatelessWidget {
             ),
           ),
         ),
-        // 하단 정보 섹션
+        // 2. 중간 정보 섹션
         Container(
           color: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+          // padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
           child: Center(
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 1200),
-              child: isDesktop ?
-              const Row(
+              constraints: const BoxConstraints(maxWidth: 1280),
+              child: isDesktop
+                  ? const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: _FooterInfo()),
-                  _FooterLinks()
+                  Expanded(flex: 3, child: _FooterInfo()), // 회사 정보
+                  Expanded(flex: 1, child: _FooterQuickLinks()), // 빠른 링크
                 ],
-              ) :
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              )
+                  : const Column( // 모바일 레이아웃
                 children: [
                   _FooterInfo(),
-                  SizedBox(height: 30),
-                  _FooterLinks()
+                  SizedBox(height: 40),
+                  _FooterQuickLinks(),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // 3. 하단 저작권 섹션
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1280),
+              decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1))),
+              padding: const EdgeInsets.only(top: 30),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Image.asset( // INNOX 로고 이미지로 교체
+                    'images/Group2468.png',
+                    height: 20,
+                  ),
+                  const Text(
+                    'Copyright © 2025 BikeMetrics. All Rights Reserved.',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -212,9 +247,14 @@ class AppFooter extends StatelessWidget {
   Widget _footerLinkButton(String text) {
     return TextButton(
       onPressed: () {},
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.white,
+        padding: EdgeInsets.zero,
+        minimumSize: Size.zero,
+      ),
       child: Text(
         text,
-        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w400),
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
       ),
     );
   }
@@ -227,43 +267,86 @@ class _FooterInfo extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // TODO: 실제 로고 이미지로 교체
-        const Text("Bike Metrics", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 20),
-        const Text('본사 : 경기도 양주시 칠봉산로120번길 82(봉양동) | 경기도 양주시 봉양동 33-4', style: TextStyle(color: Colors.black, fontSize: 13)),
-        const SizedBox(height: 5),
-        const Text('TEL : (031) 727 - 9100  |  A/S : (031) 859 - 0100  |  FAX : (031) 727 - 9291', style: TextStyle(color: Colors.black, fontSize: 13)),
-        const SizedBox(height: 5),
-        const Text('사업자 번호 : 107-87-33730', style: TextStyle(color: Colors.black, fontSize: 13)),
-        const SizedBox(height: 20),
-        const Text('Copyright © 2025 BikeMetrics. All Rights Reserved.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+        Row(
+          children: [
+            Image.asset( // BIKE METRICS 로고
+              'images/LOGO4.png',
+              height: 24,
+            ),
+            const SizedBox(width: 20),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text('본사 : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                    const Text('경기도 양주시 칠봉산로120번길 82(봉양동) | 경기도 양주시 봉양동 33-4', style: TextStyle(color: Colors.black, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  children: [
+                    const Text('TEL : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                    const Text('(031) 727 - 9100  ', style: TextStyle(color: Colors.black, fontSize: 13)),
+                    const Text('A/S : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                    const Text('(031) 859 - 0100  ', style: TextStyle(color: Colors.black, fontSize: 13)),
+                    const Text('FAX : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                    const Text('(031) 727 - 9291', style: TextStyle(color: Colors.black, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  children: [
+                    const Text('사업자 번호 : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                    const Text('107-87-33730', style: TextStyle(color: Colors.black, fontSize: 13)),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+        // const SizedBox(height: 20),
       ],
     );
   }
 }
 
-class _FooterLinks extends StatelessWidget {
-  const _FooterLinks();
+class _FooterQuickLinks extends StatelessWidget {
+  const _FooterQuickLinks();
+
+  Widget _quickLink(String text) {
+    return TextButton(
+      onPressed: () {},
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        minimumSize: Size.zero,
+        alignment: Alignment.centerLeft,
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        SizedBox(
-          width: 120, // 정렬을 위한 너비 지정
-          child: Row(
-            children: [
-              Text('INNOX', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-              SizedBox(width: 5),
-              Text('Family', style: TextStyle(color: Colors.grey)),
-            ],
-          ),
-        ),
+        _quickLink('HOME'),
+        const SizedBox(height: 8),
+        _quickLink('AI 맞춤 자전거 찾기'),
+        const SizedBox(height: 8),
+        _quickLink('AI 시세 조회하기'),
       ],
     );
   }
 }
-
 
 // --- 페이지 1: 홈페이지 ---
 class HomePage extends StatelessWidget {
