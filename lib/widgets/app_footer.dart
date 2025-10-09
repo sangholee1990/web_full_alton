@@ -18,7 +18,7 @@ class AppFooter extends StatelessWidget {
       children: [
         // 1. 상단 주황색 바
         Container(
-          color: const Color(0xFFFF7900),
+          color: const Color(0xFFFE8B21),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Center(
             child: Container(

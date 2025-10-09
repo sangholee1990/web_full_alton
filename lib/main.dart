@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'bike_finder_page.dart';
 import 'widgets/app_header.dart';
 import 'widgets/app_footer.dart';
+import 'package:web_full_alton/utils/providers.dart';
 
 // main 함수: 앱의 시작점
 void main() {
@@ -17,10 +18,6 @@ void main() {
   );
 }
 
-final isScrolledProvider = StateProvider<bool>((ref) {
-  return false;
-});
-
 // MyApp 클래스: 앱의 루트 위젯, 라우팅 정의
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -28,10 +25,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Bike Metrics',
+      title: '바이크메트릭스 AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFFFF7900), // 메인 오렌지 색상 (Figma 기준)
+        primaryColor: const Color(0xFFFE8B21), // 메인 오렌지 색상 (Figma 기준)
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Pretendard',
         textTheme: const TextTheme(
@@ -60,28 +57,29 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  final ScrollController _scrollController = ScrollController();
+
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
+  }
+
+  void _scrollListener() {
+    final shouldBeScrolled = _scrollController.offset > 0;
+    if (ref.read(isScrolledProvider) != shouldBeScrolled) {
+      ref
+          .read(isScrolledProvider.notifier)
+          .state = shouldBeScrolled;
+    }
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _scrollListener() {
-    final bool shouldBeScrolled = _scrollController.offset > 10;
-    final bool isCurrentlyScrolled = ref.read(isScrolledProvider);
-
-    if (shouldBeScrolled != isCurrentlyScrolled) {
-      ref.read(isScrolledProvider.notifier).state = shouldBeScrolled;
-    }
   }
 
   @override
@@ -167,8 +165,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         // primary 값에 따라 배경색과 글자색 변경
-        backgroundColor: primary ? Colors.white : const Color(0xFFFF7900),
-        foregroundColor: primary ? const Color(0xFFFF7900) : Colors.white,
+        backgroundColor: primary ? Colors.white : const Color(0xFFFE8B21),
+        foregroundColor: primary ? const Color(0xFFFE8B21) : Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // 각진 모서리
         elevation: 0,
@@ -475,7 +473,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                              color: const Color(0xFFFF7900),
+                              color: const Color(0xFFFE8B21),
                               borderRadius: BorderRadius.circular(7)
                           ),
                           child: Icon(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:web_full_alton/main.dart';
+import 'package:web_full_alton/utils/providers.dart';
+import 'package:web_full_alton/utils/logger.dart';
 
 // 상단 앱 바 위젯
 class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
@@ -22,14 +23,11 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // isScrolled 값에 따라 텍스트/아이콘 색상 결정
     final bool isScrolled = ref.watch(isScrolledProvider);
-
-    // final Color textColor = isScrolled ? Colors.black : Colors.black;
-    // final Color textColor = Colors.white;
+    logger.i('AppHeader built with isScrolled: $isScrolled');
     final Color textColor = Colors.black;
 
     return Container(
       decoration: BoxDecoration(
-        // color: isScrolled ? Colors.white : Colors.white,
         color: Colors.transparent,
         border: Border(
           bottom: BorderSide(
@@ -42,7 +40,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
         // AppBar 자체는 항상 투명하게 유지
         // backgroundColor: Colors.transparent,
         backgroundColor: Colors.white.withOpacity(0.75),
-        // backgroundColor: Color(0xFFFF7900).withOpacity(0.4),
+        // backgroundColor: isScrolled ? Colors.white.withOpacity(1.0) : Colors.white.withOpacity(0.75),
         scrolledUnderElevation: 0,
         elevation: 0,
         automaticallyImplyLeading: false,
@@ -56,32 +54,32 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                   onTap: () => Navigator.pushNamed(context, '/'),
                   child: Image.asset('logo/logo-def.png', height: 24),
                 ),
-                if (isDesktop)
-                  Expanded(
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 50),
-                        _navButton(context, 'HOME', '/', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/'),
-                        _navButton(context, 'AI 맞춤 자전거 찾기', '/find', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/find'),
-                        _navButton(context, 'AI 시세 조회하기', '/', color: textColor),
-                        const Spacer(),
-                        _userMenuButton('로그인', color: textColor),
-                        _separator(color: textColor),
-                        _userMenuButton('회원가입', color: textColor),
-                        _separator(color: textColor),
-                        _userMenuButton('알톤몰', color: textColor),
-                        const SizedBox(width: 20),
-                        Icon(Icons.language, color: textColor, size: 20),
-                        const SizedBox(width: 5),
-                        Text('KOR', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13)),
-                      ],
-                    ),
+                // if (isDesktop)
+                Expanded(
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 50),
+                      _navButton(context, 'HOME', '/', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/'),
+                      _navButton(context, 'AI 맞춤 자전거 찾기', '/find', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/find'),
+                      _navButton(context, 'AI 시세 조회하기', '/', color: textColor),
+                      const Spacer(),
+                      _userMenuButton('로그인', color: textColor),
+                      _separator(color: textColor),
+                      _userMenuButton('회원가입', color: textColor),
+                      _separator(color: textColor),
+                      _userMenuButton('알톤몰', color: textColor),
+                      const SizedBox(width: 20),
+                      Icon(Icons.language, color: textColor, size: 20),
+                      const SizedBox(width: 5),
+                      Text('KOR', style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
                   ),
-                if (!isDesktop)
-                  IconButton(
-                    icon: Icon(Icons.menu, color: textColor),
-                    onPressed: () { /* TODO: Drawer 구현 */ },
-                  ),
+                ),
+                // if (!isDesktop)
+                //   IconButton(
+                //     icon: Icon(Icons.menu, color: textColor),
+                //     onPressed: () { /* TODO: Drawer 구현 */ },
+                //   ),
               ],
             ),
           ),
@@ -92,7 +90,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
 
   // ### 3. 네비게이션 버튼 텍스트 색상을 흰색으로 변경 ###
   Widget _navButton(BuildContext context, String text, String routeName, {bool isActive = false, required Color color}) {
-    final activeColor = const Color(0xFFFF7900);
+    final activeColor = const Color(0xFFFE8B21);
     return TextButton(
       onPressed: () => Navigator.pushNamed(context, routeName),
       style: ButtonStyle(
@@ -108,7 +106,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
 
   // ### 4. 유저 메뉴 버튼 텍스트 색상을 흰색으로 변경 ###
   Widget _userMenuButton(String text, {required Color color}) {
-    final hoverColor = const Color(0xFFFF7900);
+    final hoverColor = const Color(0xFFFE8B21);
     return TextButton(
       onPressed: () {},
       style: ButtonStyle(
