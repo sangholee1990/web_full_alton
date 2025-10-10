@@ -1,9 +1,31 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'widgets/app_header2.dart';
 import 'widgets/app_footer.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_full_alton/utils/providers.dart';
+import 'package:high_chart/high_chart.dart';
+import 'dart:convert';
+import 'package:flutter_icon_snackbar/flutter_icon_snackbar.dart';
+import 'package:web_full_alton/utils/logger.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
+// import 'dart:js_interop';
+// import 'dart:js_interop_unsafe';
+
+// @JS('getChartSVG')
+// external JSString _getChartSVG();
+
+const Color kPrimaryColor = Color(0xFFFE8B21);
+const Color kHeaderColor = Color(0xFF424242);
+const TextStyle kSectionTitleStyle = TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
+const TextStyle kCardTitleStyle = TextStyle(fontSize: 16, fontWeight: FontWeight.bold);
 
 // --- 페이지 2: AI 맞춤 자전거 찾기 ---
 // (이전 코드와 동일, 생략)
@@ -19,6 +41,13 @@ class Bike {
   final String spec;
   final String driveSystem;
 
+  final String tag; // 예: 추천, 가성비
+  final Color tagColor; // 태그 배경색
+  final Map<String, int> performanceStats; // 레이더 차트 데이터
+  final List<String> pros; // 장점
+  final List<String> cons; // 단점
+  final String summary; // AI 총평 요약
+
   Bike({
     required this.name,
     required this.brand,
@@ -30,6 +59,13 @@ class Bike {
     required this.frame,
     required this.spec,
     required this.driveSystem,
+
+    required this.tag,
+    required this.tagColor,
+    required this.performanceStats,
+    required this.pros,
+    required this.cons,
+    required this.summary,
   });
 }
 
@@ -44,6 +80,9 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
 
   late final ScrollController _scrollController;
   int _currentStep = 0;
+  final GlobalKey _chartKey = GlobalKey();
+  // pw.Font? _pdfFont;
+  bool _isGeneratingPdf = false;
 
   // --- 상태 변수 ---
   // Step 1
@@ -55,26 +94,51 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
   final TextEditingController _inseamController = TextEditingController(text: "79.5");
 
   // Step 3 & 4 (이전 코드와 동일)
-  final List<Bike> _recommendedBikes = List.generate(
-    12, // 더보기 기능을 테스트하기 위해 12개의 자전거 데이터 생성
-        (index) => Bike(
-      name: '25알톤 R ONE 로드자전거',
-      brand: '알톤',
-      price: 1110000,
-      imagePath: 'images/25-BOMARC-21D_MATT-BLACK_RGB1.png',
-      weight: 12.5,
-      gears: 12,
-      brakeType: '디스크',
-      frame: '알루미늄',
-      spec: '시마노, 인피쉰(무한)+Forza휠 용접비드안보이는것',
-      driveSystem: 'LTWOO 12단 변속시스템',
-    ),
-  );
-
+  final List<Bike> _recommendedBikes = [
+    Bike(name: '25알원 R ONE 로드자전거', brand: '알톤', price: 1110000, imagePath: 'images/25-BOMARC-21D_MATT-BLACK_RGB1.png', frame: '알루미늄', weight: 10.5, gears: 22, brakeType: '디스크', spec: '시마노 105', driveSystem: '시마노 105', tag: '추천', tagColor: Colors.orange, performanceStats: {'가성비': 4, '성능': 5, '편의성': 3, '디자인': 4, '유지보수': 4}, pros: ['경량 프레임', '안정적인 제동력'], cons: ['다소 높은 가격'], summary: '입문용 로드자전거로 가장 균형 잡힌 성능을 제공하며, 특히 안정적인 주행 성능이 돋보입니다.'),
+    Bike(name: '25자비스16 로드자전거', brand: '알톤', price: 780000, imagePath: 'images/25-BOMARC-21D_MATT-BLACK_RGB1.png', frame: '알루미늄', weight: 11.2, gears: 16, brakeType: '캘리퍼', spec: '시마노 클라리스', driveSystem: '시마노 클라리스', tag: '가성비', tagColor: Colors.green, performanceStats: {'가성비': 5, '성능': 3, '편의성': 4, '디자인': 3, '유지보수': 5}, pros: ['저렴한 가격', '유지보수 용이'], cons: ['다소 무거운 무게'], summary: '가격 대비 성능이 매우 우수하여, 출퇴근이나 가벼운 운동 용도로 자전거를 시작하는 분들에게 최적입니다.'),
+    Bike(name: '23인피자 이노사이클 9', brand: '인피자', price: 930000, imagePath: 'images/25-BOMARC-21D_MATT-BLACK_RGB1.png', frame: '알루미늄', weight: 10.8, gears: 18, brakeType: '디스크', spec: '시마노 소라', driveSystem: '시마노 소라', tag: '', tagColor: Colors.transparent, performanceStats: {'가성비': 4, '성능': 4, '편의성': 4, '디자인': 4, '유지보수': 4}, pros: ['유압식 디스크 브레이크'], cons: ['연식이 조금 지남'], summary: '유압식 디스크 브레이크를 채택하여 다양한 도로 환경에서 안정적인 제동력을 보여주는 모델입니다.'),
+    Bike(name: '23엘리우스-D 105', brand: '알톤', price: 2200000, imagePath: 'images/25-BOMARC-21D_MATT-BLACK_RGB1.png', frame: '카본', weight: 8.9, gears: 22, brakeType: '디스크', spec: '시마노 105', driveSystem: '시마노 105', tag: '성능', tagColor: Colors.blue, performanceStats: {'가성비': 3, '성능': 5, '편의성': 3, '디자인': 5, '유지보수': 3}, pros: ['초경량 카본 프레임', '최상급 구동계'], cons: ['높은 가격대', '전문가 수준의 관리 필요'], summary: '카본 프레임과 시마노 105 구동계를 장착하여, 전문적인 라이딩이나 대회 참가를 목표로 하는 분들께 추천합니다.'),
+  ];
   final Set<Bike> _selectedBikes = {};
   int _visibleBikeCount = 5;
 
+  static const List<String> kChartColors = [
+    '#7B4B19',
+    '#BE6201',
+    '#FF4E0F',
+    '#F6A10F',
+  ];
+
+  // 헥사 코드(#)를 Flutter Color 객체로 변환하는 헬퍼 함수
+  Color _hexToColor(String hexCode) {
+    final hexString = hexCode.replaceAll('#', '');
+    return Color(int.parse('FF$hexString', radix: 16));
+  }
+
+
   void _nextStep() {
+    if (_currentStep == 2 && _selectedBikes.length < 2) {
+      IconSnackBar.show(
+        context,
+        snackBarType: SnackBarType.alert,
+        label: '최소 2개 이상 자전거를 선택해주세요.',
+      );
+
+      return;
+    }
+
+    if (_currentStep == 2 && _selectedBikes.length > 4) {
+      IconSnackBar.show(
+        context,
+        snackBarType: SnackBarType.alert,
+        label: '최대 4개 이하 자전거를 선택해주세요.',
+      );
+
+      return;
+    }
+
+
     if (_currentStep < 3) {
       setState(() {
         _currentStep++;
@@ -107,7 +171,15 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
+    // _loadPdfAssets();
   }
+
+  // Future<void> _loadPdfAssets() async {
+  //   final fontData = await rootBundle.load("assets/fonts/NotoSansKR-Regular.ttf");
+  //   final boldFontData = await rootBundle.load("assets/fonts/NotoSansKR-Bold.ttf");
+  //   _pdfFont = pw.Font.ttf(fontData);
+  //   _pdfBoldFont = pw.Font.ttf(boldFontData);
+  // }
 
   void _scrollListener() {
     final shouldBeScrolled = _scrollController.offset > 0;
@@ -640,10 +712,485 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     );
   }
 
-  Widget _buildStep4Report() { return const Center(child: Text("4단계: AI 비교 리포트 (구현 예정)")); }
+  Widget _buildStep4Report() {
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSelectedBikesOverview(),
+        const SizedBox(height: 40),
+        _buildSectionTitle("종합 성능 비교"),
+        _buildRadarChart(),
+        const SizedBox(height: 40),
+        _buildSectionTitle("상세 스펙 비교"),
+        _buildSpecTable(),
+        const SizedBox(height: 40),
+        _buildSectionTitle("AI 종합 분석"),
+        _buildAiAnalysis(),
+      ],
+    );
+  }
+
+  // 섹션 타이틀 위젯
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20.0),
+      child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  // 선택된 자전거 개요 위젯
+  Widget _buildSelectedBikesOverview() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. 상단 타이틀 헤더
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+          color: kHeaderColor, // 어두운 회색 배경
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                "AI 분석 자전거 비교 리포트",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "여러 모델의 장단점을 AI가 분석하여 한눈에 비교할 수 있습니다.",
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 30),
+
+        // 2. 선택된 자전거 카드 목록
+        // Row와 Expanded를 사용하여 자전거 카드를 가로로 균등하게 배치합니다.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _selectedBikes.toList().asMap().entries.map((entry) {
+            // [수정] .asMap().entries.map()을 사용해 index와 bike 객체를 모두 가져옵니다.
+            int index = entry.key;
+            Bike bike = entry.value;
+
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                // 이전에 만들었던 _buildBikeCard 위젯을 재사용합니다.
+                child: _buildBikeCard(bike, index),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBikeCard(Bike bike, int index) {
+
+    final hexCode = kChartColors[index % kChartColors.length];
+    final nameColor = Color(int.parse('FF${hexCode.replaceAll('#', '')}', radix: 16));
+
+    return Column(
+      children: [
+        // 1. 자전거 이미지
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          child: Image.asset(
+            bike.imagePath,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => const AspectRatio(
+              aspectRatio: 1,
+              child: Center(child: Icon(Icons.photo, color: Colors.grey)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 2. 브랜드 태그
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(4.0),
+          ),
+          child: Text(
+            bike.brand,
+            style: const TextStyle(color: Color(0xFF4D4D53), fontSize: 12, fontFamily: 'NotoSansKr', fontWeight: FontWeight.w400),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // 3. 자전거 이름
+        // _buildBikeName(bike),
+        Text(
+          bike.name,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: nameColor, fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'NotoSansKr'),
+        ),
+        const SizedBox(height: 6),
+        // 4. 가격
+        Text(
+          '${bike.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}원',
+          style: TextStyle(fontSize: 15, fontFamily: 'NotoSansKr', color: Color(0xFF4D4D53), fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
+
+  // 레이더 차트 위젯
+  Widget _buildRadarChart() {
+    final List<Bike> bikes = _selectedBikes.toList();
+    final List<String> titles = ['가성비', '성능', '편의성', '디자인', '유지보수'];
+
+    // HighCharts 위젯에 전달할 데이터 Map 생성
+    final Map<String, dynamic> chartData = {
+      // [수정] 차트 전체에 적용될 색상 지정
+      'chart': {
+        'polar': true, // পোলার (레이더) 차트 활성화
+        'type': 'line', // 라인 타입으로 지정
+        'events': {
+          'load': '''
+          function() {
+            window.flutterChart = this;
+          }
+        '''
+        }
+      },
+      'exporting': {
+        'enabled': false,
+      },
+      'title': {'text': ''},
+      'pane': {'size': '80%'},
+      'xAxis': {
+        'categories': titles,
+        'tickmarkPlacement': 'on',
+        'lineWidth': 0
+      },
+      'yAxis': {
+        'gridLineInterpolation': 'polygon',
+        'lineWidth': 0,
+        'min': 0,
+        'max': 5,
+        'tickInterval': 1,
+      },
+      'tooltip': {
+        'shared': true,
+        'pointFormat': '<span style="color:{series.color}">{series.name}: <b>{point.y}</b><br/>'
+      },
+      // [수정] 범례 설정을 하단으로 변경
+      'legend': {
+        // 'align': 'center',
+        // 'verticalAlign': 'bottom',
+        // 'layout': 'horizontal'
+        'align': 'right',
+        'verticalAlign': 'middle',
+        'layout': 'vertical'
+      },
+      'plotOptions': {
+        'line': {
+          'marker': {
+            'enabled': true,
+            'radius': 5,
+            'lineWidth': 2,
+            'symbol': 'circle',
+          }
+        }
+      },
+      'series': List.generate(bikes.length, (i) {
+        final bike = bikes[i];
+        final color = kChartColors[i];
+        // logger.i('color value: ${color}');
+
+        return {
+          'name': bike.name,
+          'data': titles
+              .map((title) => bike.performanceStats?[title] ?? 0)
+              .toList(),
+          'pointPlacement': 'on',
+          'color': color,
+        };
+      }),
+      'credits': {'enabled': false},
+      'accessibility': {'enabled': false},
+    };
+
+    return SizedBox(
+      height: 400,
+      child: HighCharts(
+        data: jsonEncode(chartData),
+        size: Size(MediaQuery.of(context).size.width, 400),
+      ),
+    );
+  }
+
+  // 상세 스펙 비교 테이블 위젯
+  Widget _buildSpecTable() {
+    // _selectedBikes는 사용자가 선택한 순서를 유지하는 List입니다.
+    final List<Bike> bikes = _selectedBikes.toList();
+
+
+    // 셀에 일관된 패딩을 적용하기 위한 변수
+    const cellPadding = EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0);
+
+    // 1. 자전거 이름 헤더 셀 (색상 있는 텍스트)
+    Widget buildBikeHeaderCell(String text, int index) {
+      // kChartColors 리스트에서 순서에 맞는 색상을 가져와 적용
+      final hexCode = kChartColors[index % kChartColors.length].replaceAll('#', '');
+      final color = Color(int.parse('FF$hexCode', radix: 16));
+
+      return Padding(
+        padding: cellPadding,
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16),
+        ),
+      );
+    }
+
+    // 2. 항목 헤더 셀 (첫 번째 열, 굵은 텍스트)
+    Widget buildRowHeaderCell(String text) {
+      return Padding(
+        padding: cellPadding,
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'NotoSansKr'),
+        ),
+      );
+    }
+
+    // 3. 일반 데이터 셀
+    Widget buildCell(String text) {
+      return Padding(
+        padding: cellPadding,
+        child: Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontFamily: 'NotoSansKr')),
+      );
+    }
+
+    return Table(
+      // [수정] 세로선 없이 가로선만 표시
+      border: TableBorder(
+        horizontalInside: BorderSide(width: 1, color: Colors.grey[300]!),
+      ),
+      // 첫 번째 열의 너비는 내용에 맞게 자동 조절
+      columnWidths: const { 0: IntrinsicColumnWidth() },
+      // 모든 셀의 내용을 세로 중앙 정렬
+      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+      children: [
+        // 헤더 행
+        TableRow(
+          decoration: BoxDecoration(color: Colors.grey[100]),
+          children: [
+            buildRowHeaderCell("항목"),
+            ...bikes.asMap().entries.map((entry) {
+              int index = entry.key;
+              Bike bike = entry.value;
+              return buildBikeHeaderCell(bike.name, index);
+            }).toList(),
+          ],
+        ),
+
+        // 데이터 행
+        TableRow(children: [
+          buildRowHeaderCell("가격"),
+          ...bikes.map((b) => buildCell(formatPrice(b.price))),
+        ]),
+        TableRow(children: [
+          buildRowHeaderCell("프레임"),
+          ...bikes.map((b) => buildCell(b.frame)),
+        ]),
+        TableRow(children: [
+          buildRowHeaderCell("무게"),
+          ...bikes.map((b) => buildCell('${b.weight}kg')),
+        ]),
+        TableRow(children: [
+          buildRowHeaderCell("기어"),
+          ...bikes.map((b) => buildCell('${b.gears}단')),
+        ]),
+        TableRow(children: [
+          buildRowHeaderCell("브레이크"),
+          ...bikes.map((b) => buildCell(b.brakeType)),
+        ]),
+      ],
+    );
+  }
+
+  // --- [개선] AI 종합 분석 위젯 ---
+  Widget _buildAiAnalysis() {
+    // _selectedBikes는 사용자가 선택한 순서를 유지하는 List입니다.
+    final bikes = _selectedBikes.toList();
+
+    // 'AI 총평' 섹션의 개별 요약 라인을 만드는 헬퍼 함수
+    Widget buildSummaryRow(Bike bike, int index) {
+      // kChartColors에서 순서에 맞는 색상을 가져옵니다.
+      final color = _hexToColor(kChartColors[index % kChartColors.length]);
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 자전거 이름 (색상 적용 및 너비 고정으로 정렬 효과)
+            SizedBox(
+              width: 220, // 너비를 고정하여 좌측 정렬 효과를 줍니다.
+              child: Text(
+                bike.name,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontFamily: 'NotoSansKr'
+                ),
+              ),
+            ),
+            const SizedBox(width: 20),
+            // 요약 내용
+            Expanded(
+              child: Text(
+                bike.summary, // Bike 모델의 summary 필드를 각 라인에 사용
+                style: const TextStyle(fontSize: 15, height: 1.6, color: Colors.black87, fontFamily: 'NotoSansKr'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // --- 1. AI 총평 섹션 ---
+        // [수정] 회색 배경을 추가하기 위해 Container로 감싸줍니다.
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24.0), // 내부 여백 추가
+          decoration: BoxDecoration(
+            color: Colors.grey[100], // 연한 회색 배경색
+            borderRadius: BorderRadius.circular(4), // 부드러운 느낌을 위한 둥근 모서리
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("AI 총평", style: kSectionTitleStyle),
+              const SizedBox(height: 20),
+              const Text(
+                "네 모델은 각기 다른 라이딩 스타일에 최적화되어 있습니다.",
+                style: TextStyle(fontSize: 15, color: Colors.black87),
+              ),
+              const SizedBox(height: 20),
+              // 자전거별 요약 목록
+              Column(
+                children: bikes.asMap().entries.map((entry) {
+                  return buildSummaryRow(entry.value, entry.key);
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 50),
+
+        // --- 2. 개별 분석 카드 섹션 (기존과 동일) ---
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return Wrap(
+              spacing: 20,
+              runSpacing: 20,
+              children: bikes.asMap().entries.map((entry) {
+                return SizedBox(
+                  width: constraints.maxWidth > 600 ? (constraints.maxWidth / 2 - 10) : double.infinity,
+                  child: _buildAnalysisCard(entry.value, entry.key),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+// --- [개선] 개별 분석 카드 위젯 ---
+  Widget _buildAnalysisCard(Bike bike, int index) {
+    // 카드 테두리 및 버튼에 적용할 고유 색상
+    final color = _hexToColor(kChartColors[index % kChartColors.length]);
+
+    // "장점: (분석 내용)" 형태의 텍스트 라인을 만드는 헬퍼
+    Widget buildDetailRow(String label, String content) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: RichText(
+          text: TextSpan(
+            style: const TextStyle(fontSize: 15, color: Colors.black87, fontFamily: 'Pretendard', height: 1.7),
+            children: [
+              TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+              TextSpan(text: content),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(24.0),
+      decoration: BoxDecoration(
+        border: Border.all(color: color.withOpacity(0.8)), // 테두리 색상 적용
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 카드 타이틀 (자전거 이름)
+          Text(
+            bike.name,
+            style: TextStyle(
+              color: color, // 이름에 고유 색상 적용
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 분석 내용
+          buildDetailRow("장점", bike.pros.join(', ')), // pros 리스트를 문자열로 변환
+          buildDetailRow("단점", bike.cons.join(', ')), // cons 리스트를 문자열로 변환
+          buildDetailRow("최적 고객", bike.summary), // summary를 최적 고객 내용으로 활용
+
+          const SizedBox(height: 30),
+
+          // 구매처 보기 버튼
+          ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: color, // 버튼 배경색 적용
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Text("구매처 보기"),
+                SizedBox(width: 8),
+                Icon(Icons.arrow_forward_ios, size: 16),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildNavigationButtons() {
-    // 버튼 스타일 정의
+    // 버튼 스타일 정의 (기존과 동일)
     final ButtonStyle greyButtonStyle = ElevatedButton.styleFrom(
       backgroundColor: Colors.grey[600],
       foregroundColor: Colors.white,
@@ -660,43 +1207,294 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     );
 
-    // 1단계일 경우 '초기화', '다음' 버튼 표시
-    if (_currentStep == 0) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: _resetStep1, // 초기화 함수 연결
-            style: greyButtonStyle,
-            child: const Text('초기화'),
-          ),
-          const SizedBox(width: 20),
-          ElevatedButton(
-            onPressed: _nextStep,
-            style: orangeButtonStyle,
-            child: const Text('다음'),
-          ),
-        ],
+    // [개선] 현재 단계에 따라 버튼의 텍스트와 기능을 동적으로 결정
+    final bool isFirstStep = _currentStep == 0;
+    final bool isLastStep = _currentStep == 3;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // --- 왼쪽 버튼 ---
+        ElevatedButton(
+          // [수정] PDF 생성 중에는 이전 버튼도 비활성화
+          onPressed: _isGeneratingPdf ? null : (isFirstStep ? _resetStep1 : _previousStep),
+          style: greyButtonStyle,
+          child: Text(isFirstStep ? '초기화' : '이전'),
+        ),
+        const SizedBox(width: 20),
+
+        // --- 오른쪽 버튼 ---
+        ElevatedButton(
+          // [수정] PDF 생성 중에는 버튼 비활성화
+          onPressed: _isGeneratingPdf ? null : (isLastStep ? _generateAndSavePdf : _nextStep),
+          style: orangeButtonStyle,
+          // [수정] 로딩 상태에 따라 다른 위젯 표시
+          child: _isGeneratingPdf && isLastStep
+              ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+          )
+              : Text(isLastStep ? '저장' : '다음'),
+        ),
+      ],
+    );
+  }
+
+  // --- [개선] 모든 리포트 정보를 포함하는 PDF 생성 함수 ---
+  Future<void> _generateAndSavePdf() async {
+    if (_isGeneratingPdf) return;
+    setState(() => _isGeneratingPdf = true);
+
+    try {
+      final bikes = _selectedBikes.toList();
+      if (bikes.isEmpty) {
+        logger.e('PDF 보고서 저장 실패, bikes : ${bikes}');
+        IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 저장 실패');
+        setState(() => _isGeneratingPdf = false);
+        return;
+      }
+
+      // if (_pdfFont == null) {
+      //   logger.e('PDF 보고서 저장 실패, _pdfFont : ${_pdfFont}');
+      //   IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 저장 실패');
+      //   setState(() => _isGeneratingPdf = false);
+      //   return;
+      // }
+
+      final fontData = await rootBundle.load("assets/fonts/NotoSansKR-Regular.ttf");
+      final boldFontData = await rootBundle.load("assets/fonts/NotoSansKR-Bold.ttf");
+      final font = pw.Font.ttf(fontData);
+      final boldFont = pw.Font.ttf(boldFontData);
+
+      // --- 2. 테마 정의 시 fontFallback 추가 ---
+      final myTheme = pw.ThemeData.withFont(
+        base: font,
+        bold: boldFont,
+      ).copyWith(
+        // 문서 전체에 적용될 기본 스타일 정의
+        defaultTextStyle: pw.TextStyle(fontSize: 10),
+
+        // 헤더 레벨별 스타일 정의
+        header1: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+        header2: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey800),
+
+        // 테이블 스타일 정의
+        tableHeader: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+        tableCell: pw.TextStyle(),
       );
-    }
-    // 그 외 단계에서는 '이전', '다음' 버튼 표시
-    else {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton(
-            onPressed: _previousStep,
-            style: greyButtonStyle,
-            child: const Text('이전'),
-          ),
-          const SizedBox(width: 20),
-          ElevatedButton(
-            onPressed: _nextStep,
-            style: orangeButtonStyle,
-            child: Text(_currentStep == 3 ? '완료' : '다음'),
-          ),
-        ],
+
+
+      final doc = pw.Document(theme: myTheme);
+      IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 저장 중');
+
+      final List<String> titles = ['가성비', '성능', '편의성', '디자인', '유지보수'];
+      final headers = <String>['항목', ...bikes.map((b) => b.name)];
+      final data = titles.map((title) {
+        final row = <String>[
+          title,
+          ...bikes.map((bike) => bike.performanceStats[title]?.toString() ?? '0')
+        ];
+        return row;
+      }).toList();
+
+
+      final List<pw.ImageProvider> bikeImages = [];
+      for (final bike in bikes) {
+        final imageBytes = await rootBundle.load(bike.imagePath);
+        bikeImages.add(pw.MemoryImage(imageBytes.buffer.asUint8List()));
+      }
+
+      // --- 2. PDF 스타일 정의 ---
+      final baseStyle = pw.TextStyle(font: font, fontSize: 10);
+      final titleStyle = pw.TextStyle(font: font, fontSize: 20, fontWeight: pw.FontWeight.bold);
+      final sectionTitleStyle = pw.TextStyle(font: font, fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey800);
+      final bikeNameStyle = pw.TextStyle(font: font, fontSize: 12, fontWeight: pw.FontWeight.bold);
+
+      // --- 3. PDF 페이지 및 콘텐츠 구성 ---
+      doc.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          build: (context) =>
+          [
+            // -- 문서 제목 --
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  // 기존 제목
+                  pw.Text('AI 자전거 비교 리포트', style: titleStyle),
+                  // [추가] 오늘 날짜를 표시하는 Text 위젯
+                  pw.Text(
+                    DateFormat('yyyy년 MM월 dd일').format(DateTime.now()),
+                    style: baseStyle.copyWith(color: PdfColors.grey600),
+                  ),
+                ],
+              ),
+            ),
+            // pw.Divider(thickness: 1.5),
+            pw.SizedBox(height: 10),
+
+            // -- [추가] 선택된 자전거 개요 --
+            pw.Text('자전거 비교', style: sectionTitleStyle),
+            pw.SizedBox(height: 10),
+            pw.Wrap(
+              spacing: 20,
+              runSpacing: 20,
+              children: List.generate(bikes.length, (i) {
+                return pw.SizedBox(
+                    width: 120,
+                    child: pw.Column(
+                        children: [
+                          pw.Image(bikeImages[i], height: 80,
+                              fit: pw.BoxFit.contain),
+                          pw.SizedBox(height: 8),
+                          pw.Text(
+                            bikes[i].brand,
+                            style: baseStyle.copyWith(color: PdfColors.grey600, fontSize: 9),
+                            textAlign: pw.TextAlign.center,
+                          ),
+                          pw.SizedBox(height: 4), // 브랜드명과 제품명 사이의 작은 간격
+
+                          pw.Text(
+                            bikes[i].name,
+                            style: baseStyle.copyWith(fontWeight: pw.FontWeight.bold),
+                            textAlign: pw.TextAlign.center,
+                          ),
+                          pw.Text(
+                            formatPrice(bikes[i].price),
+                            style: baseStyle,
+                            textAlign: pw.TextAlign.center,
+                          ),
+                        ]
+                    )
+                );
+              }),
+            ),
+            pw.SizedBox(height: 30),
+
+            // -- [추가] 종합 성능 비교 --
+            pw.Text('종합 성능 비교', style: sectionTitleStyle),
+            pw.SizedBox(height: 10),
+            pw.Table.fromTextArray(
+              headers: headers,
+              data: data,
+              border: pw.TableBorder.all(),
+              headerStyle: pw.TextStyle(font: font, fontWeight: pw.FontWeight.bold),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
+              cellHeight: 30,
+              cellAlignments: { for (var i = 1; i < headers.length; i++) i: pw.Alignment.center },
+              cellStyle: pw.TextStyle(font: font),
+            ),
+            pw.SizedBox(height: 30),
+
+            // -- 상세 스펙 테이블 --
+            pw.Text('상세 스펙 비교', style: sectionTitleStyle),
+            pw.SizedBox(height: 10),
+            pw.Table.fromTextArray(
+              headerStyle: bikeNameStyle.copyWith(fontSize: 10),
+              cellStyle: baseStyle,
+              headerDecoration: const pw.BoxDecoration(
+                  color: PdfColors.grey200),
+              headers: <String>['항목', ...bikes.map((b) => b.name)],
+              data: <List<String>>[
+                ['가격', ...bikes.map((b) => formatPrice(b.price))],
+                ['프레임', ...bikes.map((b) => b.frame)],
+                ['무게', ...bikes.map((b) => '${b.weight}kg')],
+                ['기어', ...bikes.map((b) => '${b.gears}단')],
+                ['브레이크', ...bikes.map((b) => b.brakeType)],
+              ],
+            ),
+            pw.SizedBox(height: 30),
+
+            // -- [개선] AI 종합 분석 --
+            pw.NewPage(),
+            pw.Text('AI 종합 분석', style: sectionTitleStyle),
+            pw.SizedBox(height: 10),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(16),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              // 선택된 자전거들의 summary를 순서대로 보여줍니다.
+              child: pw.Column(
+                children: bikes.map((bike) {
+                  return pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 12.0),
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        // 글머리 기호
+                        pw.SizedBox(width: 15, child: pw.Text('• ')),
+                        // 자전거 이름과 요약 내용
+                        pw.Expanded(
+                          // pw.Text.rich를 사용해 한 문장 안에서 다른 스타일을 적용합니다.
+                            child: pw.RichText(
+                              text: pw.TextSpan(
+                                  style: baseStyle,
+                                  children: [
+                                    pw.TextSpan(
+                                      text: '${bike.name}: ',
+                                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                                    ),
+                                    pw.TextSpan(text: bike.summary),
+                                  ]
+                              ),
+                            )
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            pw.SizedBox(height: 30),
+
+
+           // 'AI 개별 분석' 섹션 (기존과 동일)
+           //  pw.Text('AI 개별 분석', style: sectionTitleStyle),
+           //  pw.SizedBox(height: 10),
+            pw.Wrap(
+              spacing: 20,
+              runSpacing: 20,
+              children: bikes.map((bike) {
+                return pw.Container(
+                    width: 240, // A4 너비에 맞춰 2열 배치
+                    padding: const pw.EdgeInsets.all(12),
+                    decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: PdfColors.grey400)),
+                    child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(bike.name, style: bikeNameStyle),
+                          pw.SizedBox(height: 10),
+                          pw.Text('장점: ${bike.pros.join(', ')}',
+                              style: baseStyle),
+                          pw.Text('단점: ${bike.cons.join(', ')}',
+                              style: baseStyle),
+                          pw.SizedBox(height: 5),
+                          pw.Text('최적 고객: ${bike.summary}', style: baseStyle),
+                        ]
+                    )
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       );
+
+      // 4. PDF 미리보기 및 저장/인쇄 화면 표시
+      await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => doc.save(),
+      );
+    } catch (e) {
+      logger.e('PDF 보고서 저장 실패 : $e');
+      IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 저장 실패');
+    } finally {
+      setState(() => _isGeneratingPdf = false);
     }
   }
 }

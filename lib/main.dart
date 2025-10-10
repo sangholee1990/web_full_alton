@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '바이크메트릭스 AI',
+      title: '바이크메트릭스AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: const Color(0xFFFE8B21), // 메인 오렌지 색상 (Figma 기준)

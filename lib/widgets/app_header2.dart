@@ -25,8 +25,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // isScrolledProvider의 상태를 실시간으로 감지
     final bool isScrolled = ref.watch(isScrolledProvider);
-    logger.i('AppHeader2 built with isScrolled: $isScrolled');
-
+    // logger.i('AppHeader2 built with isScrolled: $isScrolled');
     final Color textColor = Colors.white;
 
 
@@ -85,7 +84,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                 // if (!isDesktop)
                 //   IconButton(
                 //     icon: Icon(Icons.menu, color: textColor),
-                //     onPressed: () { /* TODO: Drawer 구현 */ },
+                //     onPressed: () {  },
                 //   ),
               ],
             ),
