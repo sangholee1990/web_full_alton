@@ -44,6 +44,10 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   js: ^0.7.2
+#  dropdown_search: ^6.0.2
+#  multi_dropdown: ^3.0.1
+  drop_down_list: ^2.0.0
+  syncfusion_flutter_sliders: ^31.1.23
 
 dev_dependencies:
   flutter_test:

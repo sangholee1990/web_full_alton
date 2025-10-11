@@ -61,7 +61,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                       const SizedBox(width: 50),
                       _navButton(context, 'HOME', '/', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/'),
                       _navButton(context, 'AI 맞춤 자전거 찾기', '/find', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/find'),
-                      _navButton(context, 'AI 시세 조회하기', '/', color: textColor),
+                      _navButton(context, 'AI 시세 조회하기', '/price', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/price'),
                       const Spacer(),
                       _userMenuButton('로그인', color: textColor),
                       _separator(color: textColor),

@@ -161,9 +161,10 @@ class _FooterInfo extends StatelessWidget {
 class _FooterQuickLinks extends StatelessWidget {
   const _FooterQuickLinks();
 
-  Widget _quickLink(String text) {
+  Widget _quickLink(BuildContext context, String text, String routeName) {
     return TextButton(
-      onPressed: () {},
+      // 버튼 클릭 시 지정된 경로로 페이지를 이동시킵니다.
+      onPressed: () => Navigator.pushNamed(context, routeName),
       style: TextButton.styleFrom(
         padding: EdgeInsets.zero,
         minimumSize: Size.zero,
@@ -185,11 +186,11 @@ class _FooterQuickLinks extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        _quickLink('HOME'),
+        _quickLink(context, 'HOME', '/'),
         const SizedBox(height: 8),
-        _quickLink('AI 맞춤 자전거 찾기'),
+        _quickLink(context, 'AI 맞춤 자전거 찾기', '/find'),
         const SizedBox(height: 8),
-        _quickLink('AI 시세 조회하기'),
+        _quickLink(context, 'AI 시세 조회하기', '/price'),
       ],
     );
   }

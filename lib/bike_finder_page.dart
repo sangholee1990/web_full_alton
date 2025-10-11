@@ -90,7 +90,7 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
   RangeValues _currentRangeValues = const RangeValues(3000000, 9000000);
 
   // Step 2
-  final TextEditingController _heightController = TextEditingController(text: "175");
+  final TextEditingController _heightController = TextEditingController(text: "175.0");
   final TextEditingController _inseamController = TextEditingController(text: "79.5");
 
   // Step 3 & 4 (이전 코드와 동일)
@@ -273,7 +273,7 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
         ),
         // 메인 콘텐츠 영역
         Container(
-          padding: const EdgeInsets.all(30),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey[300]!),
           ),
@@ -281,8 +281,8 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 주요 용도 선택
-              const Text("주요 용도(1개 선택)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
+              const Text("주요 용도 (1개 선택)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -322,10 +322,9 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 50),
-              // 예산 설정
+              const SizedBox(height: 20),
               const Text("예산", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 25),
+              const SizedBox(height: 10),
               Column(
                 children: [
                   // 슬라이더 값 표시 라벨
@@ -478,7 +477,7 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
               _buildNumberInputField(
                 label: "키 (cm)",
                 controller: _heightController,
-                hintText: "175",
+                hintText: "175.0",
               ),
               const SizedBox(height: 30),
               _buildNumberInputField(
@@ -516,12 +515,15 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     String? hintText,
     String? description,
   }) {
-    void changeValue(int amount) {
-      int currentValue = int.tryParse(controller.text) ?? 0;
-      int newValue = currentValue + amount;
-      if (newValue >= 0) {
-        controller.text = newValue.toString();
-      }
+    void changeValue(double amount) {
+      // 버튼으로 값을 변경하는 로직은 이미 소수점을 잘 처리하고 있습니다.
+      double currentValue = double.tryParse(controller.text) ?? 0.0;
+      double newValue = currentValue + amount;
+      // 소수점 첫째 자리까지 표시
+      String formattedValue = newValue.toStringAsFixed(1);
+      controller.text = formattedValue;
+      // 커서를 텍스트 끝으로 이동시켜 사용자 경험을 개선합니다.
+      controller.selection = TextSelection.fromPosition(TextPosition(offset: controller.text.length));
     }
 
     return Column(
@@ -535,32 +537,34 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
         const SizedBox(height: 10),
         TextField(
           controller: controller,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          // [수정 1] 소수점 입력이 가능한 숫자 키보드를 사용하도록 변경
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          // [수정 2] 숫자와 소수점 첫째 자리까지만 허용하도록 입력 포매터 변경
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,1}')),
+          ],
           decoration: InputDecoration(
             hintText: hintText,
             border: const OutlineInputBorder(),
             contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            // [수정] Expanded를 제거하고 명확한 높이를 가진 Container로 감싸 오류를 해결합니다.
-            suffixIcon: Container(
-              height: 50, // 고정 높이 부여
-              margin: const EdgeInsets.only(right: 4),
+            suffixIcon: SizedBox(
+              height: 50,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   InkWell(
-                    onTap: () => changeValue(1),
+                    onTap: () => changeValue(1.0),
                     child: const Icon(Icons.arrow_drop_up, size: 24),
                   ),
                   InkWell(
-                    onTap: () => changeValue(-1),
+                    onTap: () => changeValue(-1.0),
                     child: const Icon(Icons.arrow_drop_down, size: 24),
                   ),
                 ],
               ),
             ),
           ),
+          // textAlign: TextAlign.center,
         ),
       ],
     );
@@ -856,13 +860,13 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
       'chart': {
         'polar': true, // পোলার (레이더) 차트 활성화
         'type': 'line', // 라인 타입으로 지정
-        'events': {
-          'load': '''
-          function() {
-            window.flutterChart = this;
-          }
-        '''
-        }
+        // 'events': {
+        //   'load': '''
+        //   function() {
+        //     window.flutterChart = this;
+        //   }
+        // '''
+        // }
       },
       'exporting': {
         'enabled': false,
@@ -1215,27 +1219,33 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // --- 왼쪽 버튼 ---
-        ElevatedButton(
-          // [수정] PDF 생성 중에는 이전 버튼도 비활성화
-          onPressed: _isGeneratingPdf ? null : (isFirstStep ? _resetStep1 : _previousStep),
-          style: greyButtonStyle,
-          child: Text(isFirstStep ? '초기화' : '이전'),
+        Expanded(
+          flex: 1,
+          child: ElevatedButton(
+              // [수정] PDF 생성 중에는 이전 버튼도 비활성화
+              onPressed: _isGeneratingPdf ? null : (isFirstStep ? _resetStep1 : _previousStep),
+              style: greyButtonStyle,
+              child: Text(isFirstStep ? '초기화' : '이전'),
+            ),
         ),
         const SizedBox(width: 20),
 
         // --- 오른쪽 버튼 ---
-        ElevatedButton(
-          // [수정] PDF 생성 중에는 버튼 비활성화
-          onPressed: _isGeneratingPdf ? null : (isLastStep ? _generateAndSavePdf : _nextStep),
-          style: orangeButtonStyle,
-          // [수정] 로딩 상태에 따라 다른 위젯 표시
-          child: _isGeneratingPdf && isLastStep
-              ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-          )
-              : Text(isLastStep ? '저장' : '다음'),
+        Expanded(
+          flex: 1,
+          child: ElevatedButton(
+            // [수정] PDF 생성 중에는 버튼 비활성화
+            onPressed: _isGeneratingPdf ? null : (isLastStep ? _generateAndSavePdf : _nextStep),
+            style: orangeButtonStyle,
+            // [수정] 로딩 상태에 따라 다른 위젯 표시
+            child: _isGeneratingPdf && isLastStep
+                ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+            )
+                : Text(isLastStep ? '저장' : '다음'),
+          ),
         ),
       ],
     );

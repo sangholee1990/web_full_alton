@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'bike_finder_page.dart';
+import 'package:web_full_alton/bike_finder_page.dart';
+import 'package:web_full_alton/bike_price_page.dart';
 import 'widgets/app_header.dart';
 import 'widgets/app_footer.dart';
 import 'package:web_full_alton/utils/providers.dart';
@@ -18,6 +19,87 @@ void main() {
   );
 }
 
+// 디자인 시스템의 주요 색상을 상수로 정의하여 재사용성을 높입니다.
+const Color kPrimaryColor = Color(0xFFFE8B21);
+const Color kSecondaryColor = Color(0xFF868686);
+const Color kHeaderColor = Color(0xFF4D4D53);
+const Color kTextColor = Color(0xFF1A1A1A);
+const Color kTextBodyColor = Color(0xFF4D4D53);
+const Color kBorderColor = Color(0xFFD2D2D2);
+const Color kInputBackgroundColor = Color(0xFFF6F6F6);
+
+// 앱 전체에 적용될 사용자 정의 테마
+final ThemeData customTheme = ThemeData(
+  // 1. 색상 체계 (ColorScheme) 정의
+  colorScheme: ColorScheme.light(
+    primary: kPrimaryColor,
+    secondary: kSecondaryColor,
+    surface: Colors.white,
+    background: Colors.white,
+    error: Colors.redAccent,
+    onPrimary: Colors.white, // primary 색상 위의 텍스트/아이콘
+    onSecondary: Colors.white, // secondary 색상 위의 텍스트/아이콘
+    onSurface: kTextColor, // surface 위의 텍스트/아이콘
+    onBackground: kTextColor, // background 위의 텍스트/아이콘
+    onError: Colors.white,
+  ),
+
+  // 2. 텍스트 테마 정의 (Noto Sans KR 폰트 사용을 권장)
+  textTheme: const TextTheme(
+    displaySmall: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: kTextColor, fontFamily: 'NotoSansKR'),
+    headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kTextColor, fontFamily: 'NotoSansKR'),
+    titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kTextColor, fontFamily: 'NotoSansKR'),
+    bodyLarge: TextStyle(fontSize: 16, color: kTextBodyColor, height: 1.6, fontFamily: 'NotoSansKR'),
+    bodyMedium: TextStyle(fontSize: 14, color: kTextBodyColor, height: 1.5, fontFamily: 'NotoSansKR'),
+  ),
+
+  // 3. 앱 바 테마
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.white,
+    foregroundColor: kTextColor,
+    elevation: 1,
+    titleTextStyle: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      color: kTextColor,
+    ),
+  ),
+
+  // 4. 입력 필드(TextFormField) 테마
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: kInputBackgroundColor,
+    hintStyle: TextStyle(color: kSecondaryColor.withOpacity(0.8)),
+    border: const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(4.0)),
+      borderSide: BorderSide(color: kBorderColor),
+    ),
+    enabledBorder: const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(4.0)),
+      borderSide: BorderSide(color: kBorderColor),
+    ),
+    focusedBorder: const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(4.0)),
+      borderSide: BorderSide(color: kPrimaryColor, width: 2.0),
+    ),
+  ),
+
+  // 5. 버튼 테마
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(4.0),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      backgroundColor: kPrimaryColor, // 기본 버튼은 주황색
+      foregroundColor: Colors.white,
+    ),
+  ),
+);
+
+
+
 // MyApp 클래스: 앱의 루트 위젯, 라우팅 정의
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -27,20 +109,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: '바이크메트릭스AI',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: const Color(0xFFFE8B21), // 메인 오렌지 색상 (Figma 기준)
-        scaffoldBackgroundColor: Colors.white,
-        fontFamily: 'Pretendard',
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Color(0xFF1A1A1A)), // 기본 텍스트 색상
-          bodyMedium: TextStyle(color: Color(0xFF555555)),
-        ),
-      ),
-      // 라우트(경로) 정의
+      theme: customTheme,
       initialRoute: '/',
       routes: {
         '/': (context) => const HomePage(),
         '/find': (context) => const BikeFinderPage(),
+        '/price': (context) => const BikePricePage(),
       },
     );
   }
@@ -151,7 +225,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 children: [
                   _actionButton(context, 'AI 맞춤 자전거 찾기', '/find', primary: true),
                   const SizedBox(width: 20),
-                  _actionButton(context, 'AI 시세 조회하기', '/', primary: false),
+                  _actionButton(context, 'AI 시세 조회하기', '/price', primary: false),
                 ],
               )
             ],

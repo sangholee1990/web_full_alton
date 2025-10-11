@@ -23,11 +23,9 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // isScrolledProvider의 상태를 실시간으로 감지
     final bool isScrolled = ref.watch(isScrolledProvider);
     // logger.i('AppHeader2 built with isScrolled: $isScrolled');
     final Color textColor = Colors.white;
-
 
     return Container(
       decoration: BoxDecoration(
@@ -56,8 +54,6 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
               children: [
                 InkWell(
                   onTap: () => Navigator.pushNamed(context, '/'),
-                  // ✅ 로고 경로를 프로젝트 구조에 맞게 수정해주세요 (예: 'images/LOGO_white.png')
-                  // 스크롤 시 로고를 바꾸고 싶다면 아래와 같이 삼항 연산자를 사용할 수 있습니다.
                   child: Image.asset('logo/logo-white.png', height: 24)
                 ),
                 // if (isDesktop)
@@ -67,7 +63,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                       const SizedBox(width: 50),
                       _navButton(context, 'HOME', '/', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/'),
                       _navButton(context, 'AI 맞춤 자전거 찾기', '/find', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/find'),
-                      _navButton(context, 'AI 시세 조회하기', '/', color: textColor),
+                      _navButton(context, 'AI 시세 조회하기', '/price', color: textColor, isActive: ModalRoute.of(context)?.settings.name == '/price'),
                       const Spacer(),
                       _userMenuButton('로그인', color: textColor),
                       _separator(color: textColor),
