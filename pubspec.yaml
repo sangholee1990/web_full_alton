@@ -38,16 +38,16 @@ dependencies:
   carousel_slider: ^5.1.1
   flutter_riverpod: ^2.5.1
   logger: ^2.6.2
+  logging_appenders: ^1.4.0+1
+  path_provider: ^2.1.5
   intl: ^0.20.2
   high_chart: ^2.5.1
   flutter_icon_snackbar: ^1.2.1
   pdf: ^3.11.3
   printing: ^5.14.2
   js: ^0.7.2
-#  dropdown_search: ^6.0.2
-#  multi_dropdown: ^3.0.1
-  drop_down_list: ^2.0.0
   syncfusion_flutter_sliders: ^31.1.23
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:

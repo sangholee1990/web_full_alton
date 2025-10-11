@@ -1,3 +1,4 @@
+import 'dart:js_interop';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'widgets/app_header2.dart';
@@ -16,11 +17,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-// import 'dart:js_interop';
-// import 'dart:js_interop_unsafe';
-
-// @JS('getChartSVG')
-// external JSString _getChartSVG();
+import 'dart:io';
+import 'dart:typed_data';
+// import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 const Color kPrimaryColor = Color(0xFFFE8B21);
 const Color kHeaderColor = Color(0xFF424242);
@@ -1259,8 +1259,8 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     try {
       final bikes = _selectedBikes.toList();
       if (bikes.isEmpty) {
-        logger.e('PDF 보고서 저장 실패, bikes : ${bikes}');
-        IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 저장 실패');
+        logger.e('PDF 보고서 실패, bikes : ${bikes}');
+        IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 실패');
         setState(() => _isGeneratingPdf = false);
         return;
       }
@@ -1294,9 +1294,8 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
         tableCell: pw.TextStyle(),
       );
 
-
       final doc = pw.Document(theme: myTheme);
-      IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 저장 중');
+      IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 진행 중');
 
       final List<String> titles = ['가성비', '성능', '편의성', '디자인', '유지보수'];
       final headers = <String>['항목', ...bikes.map((b) => b.name)];
@@ -1463,7 +1462,6 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
             ),
             pw.SizedBox(height: 30),
 
-
            // 'AI 개별 분석' 섹션 (기존과 동일)
            //  pw.Text('AI 개별 분석', style: sectionTitleStyle),
            //  pw.SizedBox(height: 10),
@@ -1499,10 +1497,13 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
       // 4. PDF 미리보기 및 저장/인쇄 화면 표시
       await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) async => doc.save(),
+        name:'AI 분석 자전거 비교 리포트_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf'
       );
+
+      IconSnackBar.show(context, snackBarType: SnackBarType.success, label: 'PDF 보고서 완료');
     } catch (e) {
-      logger.e('PDF 보고서 저장 실패 : $e');
-      IconSnackBar.show(context, snackBarType: SnackBarType.alert, label: 'PDF 보고서 저장 실패');
+      logger.e('PDF 보고서 실패 : $e');
+      IconSnackBar.show(context, snackBarType: SnackBarType.fail, label: 'PDF 보고서 실패');
     } finally {
       setState(() => _isGeneratingPdf = false);
     }
