@@ -23,7 +23,8 @@ class AppFooter extends StatelessWidget {
           child: Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 1280),
-              child: Row(
+              child: isDesktop
+                  ? Row( // 데스크톱 레이아웃
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Wrap(
@@ -39,6 +40,24 @@ class AppFooter extends StatelessWidget {
                   ),
                   _footerLinkButton('FAMILY SITE +'),
                 ],
+              )
+                  : Column( // 모바일 레이아웃
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 5,
+                    children: [
+                      _footerLinkButton('개인정보처리방침'),
+                      _separator(),
+                      _footerLinkButton('법적고지'),
+                      _separator(),
+                      _footerLinkButton('회사소개'),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _footerLinkButton('FAMILY SITE +'),
+                ],
               ),
             ),
           ),
@@ -46,12 +65,12 @@ class AppFooter extends StatelessWidget {
         // 2. 중간 정보 섹션
         Container(
           color: Colors.white,
-          // padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
           child: Center(
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 1280),
-                child: const Row(
+                constraints: const BoxConstraints(maxWidth: 1280),
+                child: isDesktop
+                    ? const Row( // 데스크톱 레이아웃
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -59,7 +78,14 @@ class AppFooter extends StatelessWidget {
                     Expanded(flex: 1, child: _FooterQuickLinks()),
                   ],
                 )
-            ),
+                    : const Column( // 모바일 레이아웃
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _FooterInfo(),
+                    // SizedBox(height: 30),
+                    // _FooterQuickLinks(),
+                  ],
+                )),
           ),
         ),
         // 3. 하단 저작권 섹션
@@ -69,17 +95,27 @@ class AppFooter extends StatelessWidget {
           child: Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 1280),
-              decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1))),
+              decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1))),
               padding: const EdgeInsets.only(top: 20),
-              child: Row(
+              child: isDesktop
+                  ? Row( // 데스크톱 레이아웃
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Image.asset(
-                    'images/Group2468.png',
-                    height: 20,
-                  ),
+                  Image.asset('images/Group2468.png', height: 20),
                   const Text(
                     'Copyright © 2025 BikeMetrics. All Rights Reserved.',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              )
+                  : Column( // 모바일 레이아웃
+                children: [
+                  Image.asset('images/Group2468.png', height: 20),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Copyright © 2025 BikeMetrics. All Rights Reserved.',
+                    textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
@@ -111,48 +147,57 @@ class _FooterInfo extends StatelessWidget {
   const _FooterInfo();
   @override
   Widget build(BuildContext context) {
+    // 모바일 대응을 위해 isDesktop 플래그를 가져옵니다.
+    final bool isDesktop = MediaQuery.of(context).size.width > 900;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset( // BIKE METRICS 로고
-              'logo/logo-def.png',
-              height: 24,
-            ),
+            if (isDesktop) ...[
+              Image.asset('logo/logo-def.png', height: 24),
+            ],
             const SizedBox(width: 20),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text('본사 : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('경기도 양주시 칠봉산로120번길 82(봉양동) | 경기도 양주시 봉양동 33-4', style: TextStyle(color: Colors.black, fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    const Text('TEL : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('(031) 727 - 9100  ', style: TextStyle(color: Colors.black, fontSize: 13)),
-                    const Text('A/S : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('(031) 859 - 0100  ', style: TextStyle(color: Colors.black, fontSize: 13)),
-                    const Text('FAX : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('(031) 727 - 9291', style: TextStyle(color: Colors.black, fontSize: 13)),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    const Text('사업자 번호 : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
-                    const Text('107-87-33730', style: TextStyle(color: Colors.black, fontSize: 13)),
-                  ],
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 주소
+                  const Wrap( // 긴 텍스트 줄바꿈을 위해 Wrap 사용
+                    children: [
+                      Text('본사 : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                      Text('경기도 양주시 칠봉산로120번길 82(봉양동) | 경기도 양주시 봉양동 33-4', style: TextStyle(color: Colors.black, fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  // 전화/팩스 번호
+                  Wrap( // 화면이 좁을 때 줄바꿈을 위해 Wrap 사용
+                    runSpacing: 5,
+                    children: [
+                      const Text('TEL : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                      const Text('(031) 727 - 9100  ', style: TextStyle(color: Colors.black, fontSize: 13)),
+                      const Text('A/S : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                      const Text('(031) 859 - 0100  ', style: TextStyle(color: Colors.black, fontSize: 13)),
+                      if (isDesktop) const SizedBox(width: 5), // 데스크톱에서만 간격 추가
+                      const Text('FAX : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                      const Text('(031) 727 - 9291', style: TextStyle(color: Colors.black, fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  // 사업자 번호
+                  const Row(
+                    children: [
+                      Text('사업자 번호 : ', style: TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.bold)),
+                      Text('107-87-33730', style: TextStyle(color: Colors.black, fontSize: 13)),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        // const SizedBox(height: 20),
       ],
     );
   }

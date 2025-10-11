@@ -5,8 +5,8 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_full_alton/bike_finder_page.dart';
 import 'package:web_full_alton/bike_price_page.dart';
-import 'widgets/app_header.dart';
-import 'widgets/app_footer.dart';
+import 'package:web_full_alton/widgets/app_header.dart';
+import 'package:web_full_alton/widgets/app_footer.dart';
 import 'package:web_full_alton/utils/providers.dart';
 
 // main 함수: 앱의 시작점
@@ -164,29 +164,28 @@ class _HomePageState extends ConsumerState<HomePage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppHeader(isDesktop: isDesktop),
-        body: SingleChildScrollView(
-            controller: _scrollController,
-            child: Column(
-              children: [
-                _buildHeroSection(context),
-                _buildBrandSection(context),
-                _buildCoreFunctionsSection(context, isDesktop),
-                _buildCollaborationSection(),
-                _buildApplicationSection(context, isDesktop),
-                AppFooter(isDesktop: isDesktop),
-              ],
-            ),
+      endDrawer: isDesktop ? null : const MobileDrawer(),
+      body: SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          children: [
+            _buildHeroSection(context, isDesktop), // isDesktop 전달
+            _buildBrandSection(context),
+            _buildCoreFunctionsSection(context, isDesktop),
+            _buildCollaborationSection(isDesktop), // isDesktop 전달
+            _buildApplicationSection(context, isDesktop),
+            AppFooter(isDesktop: isDesktop),
+          ],
         ),
+      ),
     );
   }
 
-  Widget _buildHeroSection(BuildContext context) {
+  Widget _buildHeroSection(BuildContext context, bool isDesktop) { // isDesktop 파라미터 추가
     return Stack(
       alignment: Alignment.centerLeft, // 콘텐츠를 왼쪽으로 정렬
       children: [
-        // Image.asset('images/Rectangle3407.jpg', height: 730, width: 1280, fit: BoxFit.cover, color: Colors.black.withOpacity(0.3), colorBlendMode: BlendMode.darken),
         const ImageSlider(),
-        // 2. 텍스트 및 버튼 콘텐츠
         Container(
           constraints: const BoxConstraints(maxWidth: 1280),
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -205,9 +204,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ],
                 ),
                 textAlign: TextAlign.left, // 텍스트 왼쪽 정렬
-                style: const TextStyle(
+                style: TextStyle( // const 제거
                   color: Colors.white,
-                  fontSize: 40,
+                  fontSize: isDesktop ? 40 : 32, // 화면 크기에 따라 폰트 사이즈 조절
                   fontWeight: FontWeight.w900,
                   height: 1.4,
                   letterSpacing: -0.8,
@@ -217,15 +216,32 @@ class _HomePageState extends ConsumerState<HomePage> {
               const Text(
                 '당신의 라이딩 경험을 혁신적으로 바꿔줄 단 하나의 자전거를 찾으세요.\nAI 맞춤 컨설턴트가 당신의 신체 사이즈, 주행 습관, 선호하는 디자인까지\n고려해 최적의 자전거를 추천합니다.\n세상에 단 하나뿐인 당신을 위한 완벽한 자전거, AI 컨설턴트와 함께 만나보세요.',
                 textAlign: TextAlign.left, // 텍스트 왼쪽 정렬
-                style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w400, height: 1.6),
+                style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w400, height: 1.6, fontFamily: 'NotoSansKr'),
               ),
               const SizedBox(height: 40),
-              // 3. 버튼 디자인 변경
-              Row(
+              // 모바일에서는 버튼을 세로로 배치
+              isDesktop
+                  ? Row(
                 children: [
                   _actionButton(context, 'AI 맞춤 자전거 찾기', '/find', primary: true),
                   const SizedBox(width: 20),
                   _actionButton(context, 'AI 시세 조회하기', '/price', primary: false),
+                ],
+              )
+                  : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // [수정] SizedBox로 감싸서 너비를 지정합니다.
+                  SizedBox(
+                    width: 250, // 원하는 너비로 설정하거나 double.infinity 사용
+                    child: _actionButton(context, 'AI 맞춤 자전거 찾기', '/find', primary: true),
+                  ),
+                  const SizedBox(height: 10),
+                  // [수정] 동일한 너비를 지정하여 크기를 맞춥니다.
+                  SizedBox(
+                    width: 250, // 위 버튼과 동일한 너비로 설정
+                    child: _actionButton(context, 'AI 시세 조회하기', '/price', primary: false),
+                  ),
                 ],
               )
             ],
@@ -417,7 +433,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         const SizedBox(width: 10),
                         Text(
                             data['title'],
-                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, fontFamily: 'NotoSansKr')
                         )
                       ],
                     ),
@@ -440,19 +456,22 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildCollaborationSection() {
+  Widget _buildCollaborationSection(bool isDesktop) { // isDesktop 파라미터 추가
     return Stack(
       alignment: Alignment.center,
       children: [
-        Image.asset('images/batch_CR6_5393.jpg', height: 800, width: double.infinity, fit: BoxFit.cover),
-        Container(height: 800, color: Colors.black.withOpacity(0.0)),
-        const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Alton x Bike Metrics', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 80, fontFamily: 'NotoSansKr', fontWeight: FontWeight.w700, height: 0.7, letterSpacing: -1.6,)),
-            SizedBox(height: 40),
-            Text('당신이 꿈꾸는 모든 길,\nAI가 안내하는 최고의 자전거와 함께', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 24, fontFamily: 'NotoSansKr', fontWeight: FontWeight.w500, height: 1.58, letterSpacing: -0.48,)),
-          ],
+        Image.asset('images/batch_CR6_5393.jpg', height: isDesktop ? 800 : 600, width: double.infinity, fit: BoxFit.cover),
+        Container(height: isDesktop ? 800 : 600, color: Colors.black.withOpacity(0.0)),
+        Padding( // 모바일 화면 패딩 추가
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Alton x Bike Metrics', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: isDesktop ? 80 : 48, fontFamily: 'NotoSansKr', fontWeight: FontWeight.w700, height: 0.7, letterSpacing: -1.6,)),
+              const SizedBox(height: 40),
+              Text('당신이 꿈꾸는 모든 길,\nAI가 안내하는 최고의 자전거와 함께', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: isDesktop ? 24 : 18, fontFamily: 'NotoSansKr', fontWeight: FontWeight.w500, height: 1.58, letterSpacing: -0.48,)),
+            ],
+          ),
         )
       ],
     );
@@ -496,18 +515,29 @@ class _HomePageState extends ConsumerState<HomePage> {
           child: Column(
             children: [
               _buildSectionTitle('Application', '바이크 메트릭스 이렇게 활용해 보세요!'),
+              const SizedBox(height: 40), // 타이틀과 그리드 사이 여백 추가
 
-              // ### 해결: GridView를 Wrap 위젯으로 교체 ###
-              Wrap(
-                spacing: 20, // 카드 사이의 가로 간격
-                runSpacing: 20, // 카드 사이의 세로 간격
-                alignment: WrapAlignment.center, // 가운데 정렬
+              // ✅ Wrap 위젯을 GridView.count로 교체
+              GridView.count(
+                // 1. isDesktop 값에 따라 열 개수를 동적으로 설정
+                crossAxisCount: isDesktop ? 4 : 1,
+                padding: EdgeInsets.zero,
+
+                // 2. Column 내부에서 GridView가 정상적으로 표시되도록 하는 필수 속성
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+
+                // 3. 아이템 사이의 간격 설정
+                crossAxisSpacing: 20, // 가로 간격
+                mainAxisSpacing: 20,  // 세로 간격
+
+                // 4. 아이템의 가로:세로 비율. (디자인에 맞게 값을 조절하세요)
+                childAspectRatio: isDesktop ? 1 / 1.2 : 1 / 1.3,
+
+                // 5. GridView에 표시될 자식 위젯들
                 children: apps.map((app) {
-                  // ### 각 카드의 너비를 지정하여 한 줄에 표시될 개수 제어 ###
-                  return SizedBox(
-                    width: isDesktop ? 295 : (MediaQuery.of(context).size.width / 2) - 30,
-                    child: _buildApplicationCard(app),
-                  );
+                  // SizedBox로 너비를 지정할 필요가 없습니다.
+                  return _buildApplicationCard(app);
                 }).toList(),
               ),
             ],
@@ -519,63 +549,71 @@ class _HomePageState extends ConsumerState<HomePage> {
 
 // Application Card 위젯 (세로 스크롤 제거 버전)
   Widget _buildApplicationCard(Map<String, dynamic> data) {
-    // ### 중요: Card를 IntrinsicHeight로 감싸서 내부 높이를 콘텐츠에 맞춤 ###
-    return IntrinsicHeight(
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        clipBehavior: Clip.antiAlias,
-        color: Colors.white,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image.asset(
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ✅ 1. 이미지를 Expanded로 감싸서 유연한 공간을 차지하도록 합니다.
+          Expanded(
+            // flex를 조절하여 이미지와 텍스트 영역의 세로 비율을 정할 수 있습니다. (예: 5:4 비율)
+            flex: 5,
+            child: Image.asset(
               data['imagePath'],
-              height: 150,
+              // ❗ 고정 높이(height)를 제거합니다.
               width: double.infinity,
               fit: BoxFit.cover,
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                              color: const Color(0xFFFE8B21),
-                              borderRadius: BorderRadius.circular(7)
-                          ),
-                          child: Icon(
-                            data['iconData'],
-                            color: Colors.white,
-                            size: 20,
-                          ),
+          ),
+          // ✅ 2. 텍스트 영역도 Expanded로 감싸서 남은 공간을 모두 차지하도록 합니다.
+          Expanded(
+            flex: 4,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                            color: const Color(0xFFFE8B21),
+                            borderRadius: BorderRadius.circular(7)),
+                        child: Icon(
+                          data['iconData'],
+                          color: Colors.white,
+                          size: 20,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                              data['title'],
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)
-                          ),
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      data['desc'],
-                      style: const TextStyle(fontSize: 16, color: Color(0xFF555555), fontWeight: FontWeight.w500, height: 1.6),
-                    ),
-                  ],
-                ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(data['title'],
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.w700)),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    data['desc'],
+                    maxLines: 2, // 텍스트가 너무 길 경우를 대비해 최대 줄 수 제한
+                    overflow: TextOverflow.ellipsis, // ... 처리
+                    style: const TextStyle(
+                        fontSize: 16,
+                        color: Color(0xFF555555),
+                        fontWeight: FontWeight.w500,
+                        height: 1.6),
+                  ),
+                ],
               ),
-            )
-          ],
-        ),
+            ),
+          )
+        ],
       ),
     );
   }

@@ -1,8 +1,8 @@
 import 'dart:js_interop';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'widgets/app_header2.dart';
-import 'widgets/app_footer.dart';
+import 'package:web_full_alton/widgets/app_header2.dart';
+import 'package:web_full_alton/widgets/app_footer.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_full_alton/utils/providers.dart';
@@ -202,15 +202,16 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     final isDesktop = screenWidth > 900;
 
     final List<Widget> stepContents = [
-      _buildStep1Budget(),
+      _buildStep1Budget(isDesktop),
       _buildStep2BodyInfo(), // 이전 단계에서 구현한 위젯
-      _buildStep3Results(),  // 이전 단계에서 구현한 위젯
-      _buildStep4Report(),   // 이전 단계에서 구현한 위젯
+      _buildStep3Results(isDesktop: isDesktop),  // 이전 단계에서 구현한 위젯
+      _buildStep4Report(isDesktop: isDesktop),   // 이전 단계에서 구현한 위젯
     ];
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppHeader(isDesktop: isDesktop),
+      endDrawer: isDesktop ? null : const MobileDrawer(), // 모바일에서만 Drawer 추가
       body: SingleChildScrollView(
         // controller: ref.watch(scrollControllerProvider),
         controller: _scrollController,
@@ -224,11 +225,11 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
                 children: [
                   const Text("AI 맞춤 자전거 찾기", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 40),
-                  _buildStepper(), // 이전 단계에서 구현한 위젯
+                  _buildStepper(isDesktop: isDesktop), // 이전 단계에서 구현한 위젯
                   const SizedBox(height: 40),
                   stepContents[_currentStep],
                   const SizedBox(height: 40),
-                  _buildNavigationButtons(), // 이전 단계에서 구현한 위젯
+                  _buildNavigationButtons(isDesktop: isDesktop), // 이전 단계에서 구현한 위젯
                 ],
               ),
             ),
@@ -240,7 +241,7 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
   }
 
   // --- 1단계: 용도 및 예산 (새롭게 구현된 위젯) ---
-  Widget _buildStep1Budget() {
+  Widget _buildStep1Budget(isDesktop) {
     final List<Map<String, dynamic>> usages = [
       {'icon': Icons.location_city, 'label': '출퇴근'},
       {'icon': Icons.fitness_center, 'label': '운동'},
@@ -283,9 +284,25 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
               // 주요 용도 선택
               const Text("주요 용도 (1개 선택)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+
+              GridView.count(
+                // 1. 한 줄에 2개의 열을 생성하여 2열 레이아웃을 만듭니다.
+                crossAxisCount: isDesktop ? 5 : 2,
+                padding: EdgeInsets.zero,
+                // 2. Column 내에서 GridView가 필요한 만큼의 공간만 차지하도록 설정합니다.
+                shrinkWrap: true,
+
+                // 3. 부모 스크롤(SingleChildScrollView)과의 충돌을 방지합니다.
+                physics: const NeverScrollableScrollPhysics(),
+
+                // 4. 아이템 사이의 간격을 설정합니다.
+                crossAxisSpacing: 12, // 가로 간격
+                mainAxisSpacing: 12,  // 세로 간격
+
+                // 5. 버튼의 가로:세로 비율을 조절합니다. (숫자를 조절해 모양 변경)
+                childAspectRatio: 2.8,
+
+                // 6. 그리드에 표시될 위젯 리스트입니다.
                 children: usages.map((usage) {
                   final bool isSelected = _selectedUsage == usage['label'];
                   return OutlinedButton(
@@ -298,11 +315,10 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
                       backgroundColor: isSelected ? const Color(0xFFFE8B21) : Colors.white,
                       side: BorderSide(color: isSelected ? const Color(0xFFFE8B21) : Colors.grey[300]!),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      // padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 40),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center, // 버튼 내부 콘텐츠 중앙 정렬
                       children: [
                         Container(
                           padding: const EdgeInsets.all(5),
@@ -393,6 +409,7 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
   // --- 이하 위젯들은 이전 코드와 동일 ---
 
   Widget _buildPageHeader() {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -404,16 +421,17 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
           errorBuilder: (context, error, stackTrace) => Container(height: 300, color: Colors.grey),
         ),
         Container(height: 300, color: Colors.black.withOpacity(0.3)),
-        const Center(
-          child: SizedBox(
-            width: 720,
+        Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 720),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('나만을 위한 최적의 라이딩 파트너', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
-                SizedBox(height: 10),
-                Text('AI 맞춤 자전거 찾기는 복잡한 자전거 선택 과정을\n획기적으로 간소화하고, 사용자의 라이프 스타일에 가장 완벽하게\n부합하는 자전거를 추천해주는 혁신적인 서비스입니다.', textAlign: TextAlign.left, style: TextStyle(fontSize: 16, color: Colors.white, height: 1.6)),
+                Text('나만을 위한 최적의 라이딩 파트너', style: TextStyle(fontSize: isDesktop ? 36 : 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 10),
+                Text('AI 맞춤 자전거 찾기는 복잡한 자전거 선택 과정을\n획기적으로 간소화하고, 사용자의 라이프 스타일에 가장 완벽하게\n부합하는 자전거를 추천해주는 혁신적인 서비스입니다.', textAlign: TextAlign.left, style: TextStyle(fontSize: isDesktop ? 16 : 13, color: Colors.white, height: 1.6)),
               ],
             ),
           ),
@@ -422,8 +440,11 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     );
   }
 
-  Widget _buildStepper() {
-    final List<String> steps = ["용도 및 예산", "신체 정보", "추천 결과", "AI 비교 리포트"];
+  Widget _buildStepper({required bool isDesktop}) {
+    final List<String> desktopSteps = ["용도 및 예산", "신체 정보", "추천 결과", "AI 비교 리포트"];
+    final List<String> mobileSteps = ["용도예산", "신체정보", "추천결과", "리포트"];
+    final List<String> steps = isDesktop ? desktopSteps : mobileSteps;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: List.generate(steps.length, (index) {
@@ -570,11 +591,12 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     );
   }
 
-  Widget _buildStep3Results() {
+  Widget _buildStep3Results({required bool isDesktop}) {
+    // isDesktop 값에 따라 다른 UI를 적용합니다.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 상단 타이틀 박스
+        // 1. 상단 타이틀 박스 (변경 없음)
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
@@ -588,56 +610,75 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
             ],
           ),
         ),
-        // 추천 개수 텍스트
+
+        // 2. 추천 개수 텍스트
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20.0),
+          // PC와 모바일에서 다른 좌우 여백을 줍니다.
+          padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: isDesktop ? 0 : 16.0),
           child: Row(
-            // 텍스트의 세로 정렬을 베이스라인에 맞춥니다.
-            // crossAxisAlignment: CrossAxisAlignment.baseline,
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              // 왼쪽 텍스트
               Text(
                 "${_recommendedBikes.length}개의 자전거가 추천되었습니다.",
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              // 위젯 사이의 공간을 최대로 확보합니다.
               const Spacer(),
-              // 오른쪽 텍스트
-              const Text(
-                "2~4개의 자전거를 선택하여 비교해보세요.",
-                style: TextStyle(fontSize: 14, color: Colors.grey), // 스타일 추가
+              Text(
+                // isDesktop 값에 따라 다른 텍스트를 보여줍니다.
+                isDesktop ? "2~4개의 자전거를 선택하여 비교해보세요." : "2~4개 선택 비교",
+                style: TextStyle(fontSize: isDesktop ? 14 : 12, color: Colors.grey),
               ),
             ],
           ),
         ),
-        // const SizedBox(height: 20),
-        // 자전거 목록
+
+        // 3. 자전거 목록
         Column(
           children: _recommendedBikes.take(_visibleBikeCount).map((bike) {
-            return _buildBikeListItem(bike);
+            // 모바일에서만 리스트 아이템에 좌우 여백을 추가합니다.
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: isDesktop ? 0 : 16.0),
+              child: _buildBikeListItem(bike, isDesktop: isDesktop),
+            );
           }).toList(),
         ),
-        // 더보기 버튼
+
+        // 4. 더보기 버튼
         if (_visibleBikeCount < _recommendedBikes.length)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 20.0),
+          Padding(
+            // 모바일에서만 좌우 여백을 줍니다.
+            padding: EdgeInsets.fromLTRB(isDesktop ? 0 : 16.0, 20.0, isDesktop ? 0 : 16.0, 0),
+            child: isDesktop
+            // --- PC용 버튼 ---
+                ? Center(
               child: OutlinedButton(
                 onPressed: () {
                   setState(() {
-                    _visibleBikeCount = _recommendedBikes.length; // 모든 항목 표시
+                    _visibleBikeCount = _recommendedBikes.length;
                   });
                 },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                   side: BorderSide(color: Colors.grey[300]!),
                 ),
-                child: const Text(
-                  "더보기",
-                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                child: const Text("더보기", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            )
+            // --- 모바일용 버튼 ---
+                : SizedBox(
+              width: double.infinity, // [핵심] 버튼을 화면 전체 너비로 확장
+              child: OutlinedButton(
+                onPressed: () {
+                  setState(() {
+                    _visibleBikeCount = _recommendedBikes.length;
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15), // 세로 높이 증가
+                  side: BorderSide(color: Colors.grey[300]!),
                 ),
+                child: const Text("더보기", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
               ),
             ),
           ),
@@ -646,55 +687,93 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
   }
 
   // 각 자전거 항목을 구성하는 위젯
-  Widget _buildBikeListItem(Bike bike) {
+  // 각 자전거 항목을 구성하는 위젯 (PC/모바일 분기 처리)
+  Widget _buildBikeListItem(Bike bike, {required bool isDesktop}) {
     final bool isSelected = _selectedBikes.contains(bike);
-    // 1. Card 스타일을 적용하기 위해 Container를 새로 추가하고 꾸며줍니다.
+
+    // --- 재사용을 위해 위젯 조각들을 변수로 정의 ---
+
+    // 1. 텍스트 정보 위젯
+    final Widget textDetails = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(bike.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Text(formatPrice(bike.price), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFFE8B21))),
+        const SizedBox(height: 8),
+        _buildSpecText("자전거 설명: ", bike.spec),
+        _buildSpecText("프레임: ", bike.frame),
+        _buildSpecText("변속시스템: ", bike.driveSystem),
+      ],
+    );
+
+    // 2. 선택 상자 위젯
+    final Widget checkboxArea = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Checkbox(
+          value: isSelected,
+          onChanged: (bool? value) {
+            setState(() {
+              if (value == true) {
+                _selectedBikes.add(bike);
+              } else {
+                _selectedBikes.remove(bike);
+              }
+            });
+          },
+          activeColor: const Color(0xFFFE8B21),
+        ),
+        const Text("선택"),
+      ],
+    );
+
+    // 3. 이미지 위젯
+    final Widget bikeImage = Image.asset(bike.imagePath, width: 200, fit: BoxFit.contain);
+
+    // --- 최종 레이아웃 반환 ---
     return Container(
-      margin: const EdgeInsets.only(bottom: 16.0), // 각 항목 아래에 여백 추가
-      padding: const EdgeInsets.all(20.0), // 내부 여백
+      padding: const EdgeInsets.all(16.0),
+      margin: const EdgeInsets.only(bottom: 16.0),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!), // 회색 테두리
-        borderRadius: BorderRadius.circular(8.0),   // 둥근 모서리
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8.0),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      // ✅ isDesktop 값에 따라 다른 레이아웃을 반환
+      child: isDesktop
+          ?
+      // --- 🖥️ PC용 레이아웃 ---
+      Row(
+        // crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Image.asset(bike.imagePath, width: 120, height: 120, fit: BoxFit.cover),
-          Image.asset(bike.imagePath, height: 120, fit: BoxFit.cover),
-          const SizedBox(width: 20),
+          bikeImage,
+          const SizedBox(width: 16),
+          Expanded(child: textDetails), // 텍스트가 남는 공간 차지
+          const SizedBox(width: 8),
+          checkboxArea,
+        ],
+      )
+          :
+      // --- 📱 모바일용 레이아웃 ---
+      Row(
+        // crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 좌측: 이미지와 텍스트를 세로로 묶고 남는 공간 모두 차지
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(bike.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text(formatPrice(bike.price), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFFE8B21))),
-                const SizedBox(height: 8),
-                _buildSpecText("자전거 설명: ", bike.spec ?? '정보 없음'),
-                _buildSpecText("프레임: ", bike.frame ?? '정보 없음'),
-                _buildSpecText("변속시스템: ", bike.driveSystem ?? '정보 없음'),
+                bikeImage,
+                const SizedBox(height: 16),
+                textDetails,
               ],
             ),
           ),
-          const SizedBox(width: 20),
-          Column(
-            children: [
-              Checkbox(
-                value: isSelected,
-                onChanged: (bool? value) {
-                  setState(() {
-                    if (value == true) {
-                      _selectedBikes.add(bike);
-                    } else {
-                      _selectedBikes.remove(bike);
-                    }
-                  });
-                },
-                activeColor: const Color(0xFFFE8B21),
-              ),
-              const Text("선택"),
-            ],
-          ),
+          const SizedBox(width: 8),
+          // 우측: 선택 상자
+          checkboxArea,
         ],
       ),
     );
@@ -716,21 +795,21 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     );
   }
 
-  Widget _buildStep4Report() {
+  Widget _buildStep4Report({required bool isDesktop}) {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSelectedBikesOverview(),
+        _buildSelectedBikesOverview(isDesktop: isDesktop),
         const SizedBox(height: 40),
         _buildSectionTitle("종합 성능 비교"),
-        _buildRadarChart(),
+        _buildRadarChart(isDesktop: isDesktop),
         const SizedBox(height: 40),
         _buildSectionTitle("상세 스펙 비교"),
         _buildSpecTable(),
         const SizedBox(height: 40),
         _buildSectionTitle("AI 종합 분석"),
-        _buildAiAnalysis(),
+        _buildAiAnalysis(isDesktop: isDesktop),
       ],
     );
   }
@@ -744,58 +823,48 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
   }
 
   // 선택된 자전거 개요 위젯
-  Widget _buildSelectedBikesOverview() {
+  Widget _buildSelectedBikesOverview({required bool isDesktop}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. 상단 타이틀 헤더
+        // 상단 타이틀 헤더 (기존과 동일)
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-          color: kHeaderColor, // 어두운 회색 배경
+          color: kHeaderColor,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: const [
-              Text(
-                "AI 분석 자전거 비교 리포트",
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
-              ),
+              Text("AI 분석 자전거 비교 리포트", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
-              Text(
-                "여러 모델의 장단점을 AI가 분석하여 한눈에 비교할 수 있습니다.",
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-              ),
+              Text("여러 모델의 장단점을 AI가 분석하여 한눈에 비교할 수 있습니다.", style: TextStyle(color: Colors.white70, fontSize: 14)),
             ],
           ),
         ),
         const SizedBox(height: 30),
 
-        // 2. 선택된 자전거 카드 목록
-        // Row와 Expanded를 사용하여 자전거 카드를 가로로 균등하게 배치합니다.
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: _selectedBikes.toList().asMap().entries.map((entry) {
-            // [수정] .asMap().entries.map()을 사용해 index와 bike 객체를 모두 가져옵니다.
-            int index = entry.key;
-            Bike bike = entry.value;
-
-            return Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                // 이전에 만들었던 _buildBikeCard 위젯을 재사용합니다.
-                child: _buildBikeCard(bike, index),
-              ),
+        // ✅ LayoutBuilder를 사용하여 부모의 너비를 기준으로 아이템 너비 계산
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return GridView.count(
+              crossAxisCount: isDesktop ? 4 : 2,
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 16.0, // 가로 간격
+              mainAxisSpacing: 16.0,  // 세로 간격
+              childAspectRatio: 0.75, // 아이템의 가로:세로 비율
+              children: _selectedBikes.toList().asMap().entries.map((entry) {
+                return _buildBikeCard(entry.value, entry.key, isDesktop);
+              }).toList(),
             );
-          }).toList(),
+          },
         ),
       ],
     );
   }
 
-  Widget _buildBikeCard(Bike bike, int index) {
+  Widget _buildBikeCard(Bike bike, int index, isDesktop) {
 
     final hexCode = kChartColors[index % kChartColors.length];
     final nameColor = Color(int.parse('FF${hexCode.replaceAll('#', '')}', radix: 16));
@@ -837,7 +906,9 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
         Text(
           bike.name,
           textAlign: TextAlign.center,
-          style: TextStyle(color: nameColor, fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'NotoSansKr'),
+          maxLines: isDesktop ? null : 1,
+          overflow: isDesktop ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: TextStyle(color: nameColor, fontSize: isDesktop ? 18 : 15, fontWeight: FontWeight.w700, fontFamily: 'NotoSansKr'),
         ),
         const SizedBox(height: 6),
         // 4. 가격
@@ -850,23 +921,15 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
   }
 
   // 레이더 차트 위젯
-  Widget _buildRadarChart() {
+  Widget _buildRadarChart({required bool isDesktop}) {
     final List<Bike> bikes = _selectedBikes.toList();
     final List<String> titles = ['가성비', '성능', '편의성', '디자인', '유지보수'];
 
     // HighCharts 위젯에 전달할 데이터 Map 생성
     final Map<String, dynamic> chartData = {
-      // [수정] 차트 전체에 적용될 색상 지정
       'chart': {
         'polar': true, // পোলার (레이더) 차트 활성화
         'type': 'line', // 라인 타입으로 지정
-        // 'events': {
-        //   'load': '''
-        //   function() {
-        //     window.flutterChart = this;
-        //   }
-        // '''
-        // }
       },
       'exporting': {
         'enabled': false,
@@ -894,9 +957,9 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
         // 'align': 'center',
         // 'verticalAlign': 'bottom',
         // 'layout': 'horizontal'
-        'align': 'right',
-        'verticalAlign': 'middle',
-        'layout': 'vertical'
+        'align': isDesktop ? 'right' : 'center',
+        'verticalAlign': isDesktop ? 'middle' : 'bottom',
+        'layout': isDesktop ? 'vertical' : 'horizontal',
       },
       'plotOptions': {
         'line': {
@@ -937,6 +1000,11 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
 
   // 상세 스펙 비교 테이블 위젯
   Widget _buildSpecTable() {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
+    return isDesktop ? _buildDesktopSpecTable() : _buildMobileSpecTable();
+  }
+
+  Widget _buildDesktopSpecTable() {
     // _selectedBikes는 사용자가 선택한 순서를 유지하는 List입니다.
     final List<Bike> bikes = _selectedBikes.toList();
 
@@ -1028,70 +1096,134 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     );
   }
 
+  // 모바일용 스펙 목록
+  Widget _buildMobileSpecTable() {
+    final List<Bike> bikes = _selectedBikes.toList();
+    final List<String> specTitles = ["가격", "프레임", "무게", "기어", "브레이크"];
+
+    // 각 스펙에 대한 데이터를 가져오는 헬퍼 함수
+    String getSpecData(Bike bike, String title) {
+      switch (title) {
+        case "가격": return formatPrice(bike.price);
+        case "프레임": return bike.frame;
+        case "무게": return '${bike.weight}kg';
+        case "기어": return '${bike.gears}단';
+        case "브레이크": return bike.brakeType;
+        default: return '';
+      }
+    }
+
+    return Column(
+      children: specTitles.map((title) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                color: Colors.grey[100],
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              // 각 자전거의 스펙을 세로로 나열
+              ...bikes.asMap().entries.map((entry) {
+                int index = entry.key;
+                Bike bike = entry.value;
+                final color = _hexToColor(kChartColors[index % kChartColors.length]);
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(bike.name, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+                      Text(getSpecData(bike, title)),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   // --- [개선] AI 종합 분석 위젯 ---
-  Widget _buildAiAnalysis() {
-    // _selectedBikes는 사용자가 선택한 순서를 유지하는 List입니다.
+  Widget _buildAiAnalysis({required bool isDesktop}) {
     final bikes = _selectedBikes.toList();
 
     // 'AI 총평' 섹션의 개별 요약 라인을 만드는 헬퍼 함수
     Widget buildSummaryRow(Bike bike, int index) {
-      // kChartColors에서 순서에 맞는 색상을 가져옵니다.
       final color = _hexToColor(kChartColors[index % kChartColors.length]);
 
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 자전거 이름 (색상 적용 및 너비 고정으로 정렬 효과)
-            SizedBox(
-              width: 220, // 너비를 고정하여 좌측 정렬 효과를 줍니다.
-              child: Text(
-                bike.name,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  fontFamily: 'NotoSansKr'
-                ),
+      // ✅ isDesktop 값에 따라 PC와 모바일 레이아웃을 다르게 반환
+      if (isDesktop) {
+        // --- 🖥️ PC용 가로 레이아웃 ---
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 220,
+                child: Text(bike.name, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'NotoSansKr')),
               ),
-            ),
-            const SizedBox(width: 20),
-            // 요약 내용
-            Expanded(
-              child: Text(
-                bike.summary, // Bike 모델의 summary 필드를 각 라인에 사용
+              const SizedBox(width: 20),
+              Expanded(child: Text(bike.summary, style: const TextStyle(fontSize: 15, height: 1.6, color: Colors.black87, fontFamily: 'NotoSansKr'))),
+            ],
+          ),
+        );
+      } else {
+        // --- 📱 모바일용 세로 레이아웃 ---
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 자전거 이름
+              Text(
+                bike.name,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'NotoSansKr'),
+              ),
+              const SizedBox(height: 8),
+              // 요약 내용
+              Text(
+                bike.summary,
                 style: const TextStyle(fontSize: 15, height: 1.6, color: Colors.black87, fontFamily: 'NotoSansKr'),
               ),
-            ),
-          ],
-        ),
-      );
+            ],
+          ),
+        );
+      }
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // --- 1. AI 총평 섹션 ---
-        // [수정] 회색 배경을 추가하기 위해 Container로 감싸줍니다.
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(24.0), // 내부 여백 추가
+          padding: const EdgeInsets.all(24.0),
           decoration: BoxDecoration(
-            color: Colors.grey[100], // 연한 회색 배경색
-            borderRadius: BorderRadius.circular(4), // 부드러운 느낌을 위한 둥근 모서리
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text("AI 총평", style: kSectionTitleStyle),
               const SizedBox(height: 20),
-              const Text(
-                "네 모델은 각기 다른 라이딩 스타일에 최적화되어 있습니다.",
-                style: TextStyle(fontSize: 15, color: Colors.black87),
-              ),
+              const Text("네 모델은 각기 다른 라이딩 스타일에 최적화되어 있습니다.", style: TextStyle(fontSize: 15, color: Colors.black87)),
               const SizedBox(height: 20),
-              // 자전거별 요약 목록
               Column(
                 children: bikes.asMap().entries.map((entry) {
                   return buildSummaryRow(entry.value, entry.key);
@@ -1193,12 +1325,12 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     );
   }
 
-  Widget _buildNavigationButtons() {
-    // 버튼 스타일 정의 (기존과 동일)
+  Widget _buildNavigationButtons({required bool isDesktop}) {
     final ButtonStyle greyButtonStyle = ElevatedButton.styleFrom(
       backgroundColor: Colors.grey[600],
       foregroundColor: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 18),
+      // PC에서는 가로 패딩을 늘려 좀 더 보기 좋게 만듭니다.
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 80 : 40, vertical: 18),
       textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     );
@@ -1206,49 +1338,55 @@ class _BikeFinderPageState extends ConsumerState<BikeFinderPage> {
     final ButtonStyle orangeButtonStyle = ElevatedButton.styleFrom(
       backgroundColor: const Color(0xFFFE8B21),
       foregroundColor: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 18),
+      padding: EdgeInsets.symmetric(horizontal: isDesktop ? 80 : 40, vertical: 18),
       textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
     );
 
-    // [개선] 현재 단계에 따라 버튼의 텍스트와 기능을 동적으로 결정
     final bool isFirstStep = _currentStep == 0;
     final bool isLastStep = _currentStep == 3;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // --- 왼쪽 버튼 ---
-        Expanded(
-          flex: 1,
-          child: ElevatedButton(
-              // [수정] PDF 생성 중에는 이전 버튼도 비활성화
-              onPressed: _isGeneratingPdf ? null : (isFirstStep ? _resetStep1 : _previousStep),
-              style: greyButtonStyle,
-              child: Text(isFirstStep ? '초기화' : '이전'),
-            ),
-        ),
-        const SizedBox(width: 20),
-
-        // --- 오른쪽 버튼 ---
-        Expanded(
-          flex: 1,
-          child: ElevatedButton(
-            // [수정] PDF 생성 중에는 버튼 비활성화
-            onPressed: _isGeneratingPdf ? null : (isLastStep ? _generateAndSavePdf : _nextStep),
-            style: orangeButtonStyle,
-            // [수정] 로딩 상태에 따라 다른 위젯 표시
-            child: _isGeneratingPdf && isLastStep
-                ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-            )
-                : Text(isLastStep ? '저장' : '다음'),
-          ),
-        ),
-      ],
+    // 버튼 위젯 생성 로직
+    Widget resetButton = ElevatedButton(
+      onPressed: _isGeneratingPdf ? null : (isFirstStep ? _resetStep1 : _previousStep),
+      style: greyButtonStyle,
+      child: Text(isFirstStep ? '초기화' : '이전'),
     );
+
+    Widget nextButton = ElevatedButton(
+      onPressed: _isGeneratingPdf ? null : (isLastStep ? _generateAndSavePdf : _nextStep),
+      style: orangeButtonStyle,
+      child: _isGeneratingPdf && isLastStep
+          ? const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+      )
+          : Text(isLastStep ? '저장' : '다음'),
+    );
+
+    // isDesktop 값에 따라 다른 레이아웃 반환
+    if (isDesktop) {
+      // --- PC용 레이아웃 (Expanded 없음) ---
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          resetButton,
+          const SizedBox(width: 20),
+          nextButton,
+        ],
+      );
+    } else {
+      // --- 모바일용 레이아웃 (Expanded 사용) ---
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(child: resetButton),
+          const SizedBox(width: 20),
+          Expanded(child: nextButton),
+        ],
+      );
+    }
   }
 
   // --- [개선] 모든 리포트 정보를 포함하는 PDF 생성 함수 ---

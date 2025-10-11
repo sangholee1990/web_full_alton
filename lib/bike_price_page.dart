@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'widgets/app_header2.dart';
-import 'widgets/app_footer.dart';
-import 'utils/providers.dart';
-import 'utils/logger.dart';
+import 'package:web_full_alton/widgets/app_header2.dart';
+import 'package:web_full_alton/widgets/app_footer.dart';
+import 'package:web_full_alton/utils/providers.dart';
+import 'package:web_full_alton/utils/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
@@ -137,6 +137,7 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppHeader(isDesktop: isDesktop),
+      endDrawer: isDesktop ? null : const MobileDrawer(),
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
@@ -190,8 +191,8 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
     }
   }
 
-
   Widget _buildPageHeader() {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -202,21 +203,18 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) => Container(height: 300, color: Colors.grey),
         ),
-        Container(color: Colors.black.withOpacity(0.3), height: 300),
-        const Center(
-          child: SizedBox(
-            width: 720,
+        Container(height: 300, color: Colors.black.withOpacity(0.3)),
+        Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 720),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('단 한 번의 조회로 정확한 시세 분석', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white)),
-                SizedBox(height: 15),
-                Text(
-                  '방대한 데이터를 학습한 AI가 데이터를 종합 분석하여,\n자전거의 현재 시세부터 미래 가치까지 정밀하게 제공합니다.\n복잡한 데이터 해석 없이도, 누구나 손쉽게 신뢰할 수 있는 가격 정보를 확인할 수 있습니다.',
-                  textAlign: TextAlign.left,
-                  style: TextStyle(fontSize: 16, color: Colors.white, height: 1.6),
-                ),
+                Text('단 한 번의 조회로 정확한 시세 분석', style: TextStyle(fontSize: isDesktop ? 36 : 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 10),
+                Text('방대한 데이터를 학습한 AI가 데이터를 종합 분석하여,\n자전거의 현재 시세부터 미래 가치까지 정밀하게 제공합니다.\n복잡한 데이터 해석 없이도, 누구나 손쉽게 신뢰할 수 있는 가격 정보를 확인할 수 있습니다.', textAlign: TextAlign.left, style: TextStyle(fontSize: isDesktop ? 16 : 13, color: Colors.white, height: 1.6)),
               ],
             ),
           ),
@@ -413,6 +411,7 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
   }
 
   Widget _buildStep2Result() {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
     final brand = _selectedBrand;
     final model = _selectedModel;
 
@@ -478,6 +477,8 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
       'chart': {
         'zoomType': 'x',
         'type': 'line',
+        if (!isDesktop) 'spacingLeft': 0,
+        if (!isDesktop) 'spacingRight': 5,
       },
       'title': {'text': ''},
       'xAxis': {
@@ -490,7 +491,7 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
         'endOnTick': true,
       },
       'yAxis': {
-        'title': {'text': '가격 (원)'},
+        'title': {'text': isDesktop ? '가격 (원)' : ''},
       },
       'tooltip': {
         'xDateFormat': '%Y-%m-%d',
@@ -522,10 +523,12 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
         },
       ],
       'credits': {'enabled': false},
-      'legend': {'enabled': true},
+      'legend': {
+        'enabled': true,
+        if (!isDesktop) 'itemStyle': {'fontSize': '10px'},
+      },
       'exporting': {'enabled': false},
     };
-
 
     return Column(
       children: [
@@ -571,69 +574,9 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 250,
-                                height: 150,
-                                decoration: BoxDecoration(
-                                  color: Colors.white, // 흰색 배경 설정
-                                  borderRadius: BorderRadius.circular(12.0),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  child: Image.asset(
-                                    'images/25-BOMARC-21D_MATT-BLACK_RGB1.png',
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      // 에러 발생 시, 부모의 흰색 배경 위에 텍스트가 표시됨
-                                      return const Center(
-                                        child: Text(
-                                          '이미지 없음',
-                                          style: TextStyle(color: Colors.grey),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    const Text('평균 거래가', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                    const SizedBox(height: 4),
-                                    Text(formatPrice(estimatedPrice), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Color(0xFFBE6201))),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              IntrinsicWidth(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch, // 자식들을 가로로 꽉 채움
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(color: kPrimaryColor, borderRadius: BorderRadius.circular(4)),
-                                      // 텍스트를 중앙에 정렬하기 위해 Center 위젯 추가
-                                      child: Center(
-                                        child: Text('상한가: ${formatPrice(maxPrice)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4), border: Border.all(color: kBorderColor)),
-                                      child: Center(
-                                        child: Text('하한가: ${formatPrice(minPrice)}', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
+                          isDesktop
+                          ? Row( crossAxisAlignment: CrossAxisAlignment.center, children: _buildSummaryContents(isDesktop))
+                          : Column( children: _buildSummaryContents(isDesktop))
                         ],
                       ),
                     ),
@@ -641,7 +584,7 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
                     const Text('시세 그래프', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 10),
                     AspectRatio(
-                      aspectRatio: 1.75,
+                      aspectRatio: isDesktop ? 1.75 : 0.75,
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           final double chartWidth = constraints.maxWidth;
@@ -665,6 +608,69 @@ class _BikePricePageState extends ConsumerState<BikePricePage> {
         _buildNavigationButtons(),
       ],
     );
+  }
+
+  // 시세 요약 콘텐츠를 만드는 헬퍼 메서드
+  List<Widget> _buildSummaryContents(bool isDesktop) {
+    final estimatedPrice = 1100000;
+    final maxPrice = 1500000;
+    final minPrice = 500000;
+
+    // ✅ 1. '평균 거래가' 부분을 별도의 위젯 변수로 분리합니다.
+    final Widget priceSection = Column(
+      mainAxisAlignment: MainAxisAlignment.center, // 세로 중앙 정렬 추가
+      children: [
+        const Text('평균 거래가', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(formatPrice(estimatedPrice), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Color(0xFFBE6201))),
+      ],
+    );
+
+    return [
+      Container(
+        width: isDesktop ? 250 : double.infinity,
+        height: 150,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12.0),
+          child: Image.asset(
+            'images/25-BOMARC-21D_MATT-BLACK_RGB1.png',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return const Center(child: Text('이미지 없음', style: TextStyle(color: Colors.grey)));
+            },
+          ),
+        ),
+      ),
+      SizedBox(width: isDesktop ? 24 : 0, height: isDesktop ? 0 : 24),
+
+      // ✅ 2. isDesktop 값에 따라 Expanded를 조건부로 적용합니다.
+      // PC일 때는 Expanded로 감싸고, 모바일일 때는 그냥 위젯을 사용합니다.
+      isDesktop ? Expanded(child: priceSection) : priceSection,
+
+      SizedBox(width: isDesktop ? 24 : 0, height: isDesktop ? 0 : 24),
+      IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(color: kPrimaryColor, borderRadius: BorderRadius.circular(4)),
+              child: Center(child: Text('상한가: ${formatPrice(maxPrice)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4), border: Border.all(color: kBorderColor)),
+              child: Center(child: Text('하한가: ${formatPrice(minPrice)}', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
+            ),
+          ],
+        ),
+      ),
+    ];
   }
 
   Widget _buildNavigationButtons() {
