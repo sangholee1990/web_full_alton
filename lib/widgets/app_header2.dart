@@ -36,17 +36,18 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
       titleSpacing: 0, // title의 기본 패딩 제거
       // actions: const <Widget>[],
       actions: [
-        Builder(
-          builder: (context) => IconButton(
-            icon: Icon(
-              Icons.menu,
-              color: Colors.white,
+        if (!isDesktop)
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(
+                Icons.menu,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                Scaffold.of(context).openEndDrawer();
+              },
             ),
-            onPressed: () {
-              Scaffold.of(context).openEndDrawer();
-            },
           ),
-        ),
       ],
       title: Center(
         child: Container(

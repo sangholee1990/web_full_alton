@@ -32,17 +32,18 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
       titleSpacing: 0,
       // actions: const <Widget>[],
       actions: [
-        Builder(
-          builder: (context) => IconButton(
-            icon: Icon(
-              Icons.menu,
-              color: Colors.black,
+        if (!isDesktop)
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(
+                Icons.menu,
+                color: Colors.black,
+              ),
+              onPressed: () {
+                Scaffold.of(context).openEndDrawer();
+              },
             ),
-            onPressed: () {
-              Scaffold.of(context).openEndDrawer();
-            },
           ),
-        ),
       ],
       title: Center(
         child: Container(
